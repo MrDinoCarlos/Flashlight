@@ -1,0 +1,23 @@
+{
+  "hand_animation_on_swap": false,
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": [
+          "firstperson_righthand",
+          "firstperson_lefthand"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "flashlight:item/flashlight_off"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "flashlight:item/flashlight_plain_off"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "source": "Flashlight.bbmodel",
+  "source_meshes": 27,
+  "source_cuboids": 26,
+  "java_cuboids": 26,
+  "removed_duplicate_meshes": [
+    6
+  ],
+  "uniform_scale": 1.95,
+  "maximum_vertex_error": 1.7763568394002505e-15,
+  "length_model_units": 21.45,
+  "first_person_scale": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "third_person_scale": [
+    0.32,
+    0.32,
+    0.32
+  ],
+  "notes": "Original shapes and colours preserved. Baked triangular UVs; reflector with light states."
+}

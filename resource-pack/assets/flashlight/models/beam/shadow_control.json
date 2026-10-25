@@ -1,0 +1,32 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "flashlight:item/beam/shadow_control",
+    "control": "flashlight:item/beam/shadow_control"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        8
+      ],
+      "to": [
+        16,
+        16,
+        8
+      ],
+      "faces": {
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#control"
+        }
+      }
+    }
+  ]
+}

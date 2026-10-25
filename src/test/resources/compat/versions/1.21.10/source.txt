@@ -1,0 +1,3 @@
+Minecraft Java 1.21.10 official client test fixtures. Not distributed in the plugin or resource pack.
+Client URL: https://piston-data.mojang.com/v1/objects/d3bdf582a7fa723ce199f3665588dcfe6bf9aca8/client.jar
+Client SHA-1: d3bdf582a7fa723ce199f3665588dcfe6bf9aca8

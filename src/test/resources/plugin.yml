@@ -1,0 +1,14 @@
+name: Flashlight
+version: 'test'
+main: es.mrdino.flashlight.PluginIntegrationTest$TestPlugin
+api-version: '1.21.4'
+commands:
+  flashlight:
+    aliases: [fl]
+permissions:
+  flashlight.use:
+    default: true
+  flashlight.admin:
+    default: op
+  flashlight.pack:
+    default: true

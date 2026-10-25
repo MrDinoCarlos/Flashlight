@@ -1,0 +1,6 @@
+Pinned renderer fixtures from the user-owned sibling projects. Test inputs only; never bundled in the plugin or client pack.
+TRP 0.4.18 / Java 1.21.4: assets/minecraft/shaders/core/rendertype_item_entity_translucent_cull.vsh: SHA-256 387a1ded5e12fdf4485feb11e1db1c30f045bb33b332d8f7f3dee06178d98ba9
+TRP 0.4.18 / Java 1.21.4: assets/minecraft/shaders/core/rendertype_item_entity_translucent_cull.fsh: SHA-256 e8e0723822af1b31e69c1a7f58b2e6e64b3a873fdda2105fe0618c272920f3b9
+StrobeLights 0.10.37 / Java 1.21.4: core/rendertype_item_entity_translucent_cull.vsh: SHA-256 3d70c5387faf75b5af486e87419fece8a2b55dde6fa0105a2ba5e317c21843ee
+StrobeLights 0.10.37 / Java 1.21.4: core/rendertype_item_entity_translucent_cull.fsh: SHA-256 9cc7f97c93d48bc287026be8092bb20e9e1e6d2c15e5cd3805cd431596c34fbd
+StrobeLights 0.10.37 / Java 1.21.4: include/utils.glsl: SHA-256 34f9ce08e0f41fef7fd7793cc4f02c356bb5ed4d8f181b737b2f7483e0af10d9

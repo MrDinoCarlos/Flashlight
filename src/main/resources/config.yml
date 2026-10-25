@@ -1,0 +1,93 @@
+# FlashLight - Paper 1.21.4-1.21.11 / 26.1.X / 26.2.X / 26.3.X
+# Use the JAR for your server branch. Java 21 for 1.21; Java 25 for 26.x.
+# The matching resource pack is bundled in each JAR; no version setting is needed.
+# Apply changes with /flashlight reload.
+# Beam shaders are inside the normal resource pack, as in TRP Server Edition.
+light:
+  entities:
+    enabled: true
+    # Per-pixel cone projection on real scene textures through the normal resource pack.
+    # Uses the vanilla outline pass in Fancy/Fabulous; never edits block or entity light.
+  # Share beams, surface lighting and shadow controls with other players.
+  shared-light: true
+  # Your own first-person beam follows the camera each rendered frame.
+  local-camera-tracking: true
+  # Smooth remote players' display updates (1-5 ticks). Does not limit local camera tracking.
+  interpolation-ticks: 2
+  shadows:
+    # Shared approximate player-body shadows, including off-screen casters.
+    # Requires entities.enabled; does not darken Minecraft's natural world light.
+    enabled: true
+    max-casters: 8
+    update-interval-ticks: 2
+  glare:
+    # Brightens the view when another flashlight points into your eyes.
+    enabled: true
+    strength: 0.65
+    max-distance: 12
+    # Glare tuning is stored in the pack: reload, then distribute the updated ZIP.
+  # Collision refresh only; movement still follows the player every tick.
+  update-interval-ticks: 2
+  range: 20.0
+  # Total opening angle, with a softer edge and a brighter central hotspot.
+  cone-angle-degrees: 28.0
+  max-brightness: 12
+  # Air beam only: 0.0 hides it, 1.0 keeps the original look, 3.0 is the maximum.
+  # Does not change the direct illumination on walls/entities. Apply with /flashlight reload.
+  beam-visibility: 1.0
+  # Direct tracking avoids stacking directional inertia and display interpolation.
+  follow-player-movement: true
+  # Used only when follow-player-movement is false.
+  follow-smoothing: 0.38
+  # Fallback surface limits when entities.enabled is false; unused by per-pixel lighting.
+  max-surface-patches: 12
+  surface-cell-budget: 128
+  breathing-amount: 0.003
+  walking-sway-amount: 0.009
+  waterproof: false
+  disabled-worlds: []
+
+flicker:
+  # Set false for maps where faults are triggered exclusively by commands.
+  enabled: true
+  min-interval-seconds: 25
+  max-interval-seconds: 65
+  min-duration-ticks: 12
+  max-duration-ticks: 28
+  # Percentage of light lost in the dim phase: 100 means complete blackouts.
+  strength-percent: 100
+  low-battery-multiplier: 2.5
+
+battery:
+  enabled: true
+  duration-seconds: 900
+  low-threshold-percent: 20
+  crafting-enabled: true
+
+effects:
+  sounds: true
+
+crafting:
+  flashlight-enabled: true
+
+resource-pack:
+  nexo:
+    # When Nexo is enabled it alone hosts/sends the pack, as in TRP.
+    enabled: true
+    # AUTO: MultiPack template on Nexo 1.27+, external_packs on older versions.
+    # MERGED explicitly selects external_packs; MULTIPACK requires Nexo 1.27+.
+    integration: AUTO
+    # Rebuild only when the managed ZIP or template changes.
+    auto-rebuild: true
+  # Also exported to plugins/FlashLight/FlashLight-ResourcePack.zip.
+  url: ''
+  sha1: ''
+  send-on-join: false
+  required: false
+  prompt: 'Load FlashLight flashlight models and lighting.'
+  # Optional built-in HTTP host for the shared pack. No skin downloads or personal packs.
+  server:
+    enabled: false
+    bind: '0.0.0.0'
+    port: 8192
+    public-url: ''

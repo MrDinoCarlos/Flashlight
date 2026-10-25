@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "flashlight:beam/shadow_control"
+  }
+}

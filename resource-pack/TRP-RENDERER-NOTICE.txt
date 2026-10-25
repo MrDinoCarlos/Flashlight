@@ -1,0 +1,2 @@
+Analytic volume and projection adapted from MrDino's Theatrical Realistic Pack Server Edition, vanilla-reset renderer.
+The Minecraft 1.21.4 wrappers preserve the original vanilla rendering for all unmarked textures.

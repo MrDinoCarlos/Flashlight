@@ -1,0 +1,52 @@
+{
+  "vertex": "flashlight:post/spotlight",
+  "fragment": "flashlight:post/spotlight",
+  "samplers": [
+    {
+      "name": "InSampler"
+    },
+    {
+      "name": "DepthSampler"
+    },
+    {
+      "name": "DataSampler"
+    },
+    {
+      "name": "OutlineSampler"
+    }
+  ],
+  "uniforms": [
+    {
+      "name": "ProjMat",
+      "type": "matrix4x4",
+      "count": 16,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "OutSize",
+      "type": "float",
+      "count": 2,
+      "values": [
+        1,
+        1
+      ]
+    }
+  ]
+}

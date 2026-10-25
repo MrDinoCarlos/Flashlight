@@ -1,0 +1,101 @@
+{
+  "targets": {
+    "swap": {},
+    "flashlight_data": {
+      "width": 27,
+      "height": 160
+    }
+  },
+  "passes": [
+    {
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:entity_outline"
+        }
+      ],
+      "output": "flashlight_data",
+      "vertex_shader": "flashlight:post/control_copy",
+      "fragment_shader": "flashlight:post/control_copy"
+    },
+    {
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:entity_outline"
+        }
+      ],
+      "output": "swap",
+      "vertex_shader": "flashlight:post/outline",
+      "fragment_shader": "flashlight:post/outline"
+    },
+    {
+      "vertex_shader": "minecraft:post/blur",
+      "fragment_shader": "minecraft:post/entity_outline_box_blur",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "swap",
+          "bilinear": true
+        }
+      ],
+      "output": "minecraft:entity_outline",
+      "uniforms": [
+        {
+          "name": "BlurDir",
+          "type": "vec2",
+          "values": [
+            1.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    {
+      "vertex_shader": "minecraft:post/blur",
+      "fragment_shader": "minecraft:post/entity_outline_box_blur",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:entity_outline",
+          "bilinear": true
+        }
+      ],
+      "output": "swap",
+      "uniforms": [
+        {
+          "name": "BlurDir",
+          "type": "vec2",
+          "values": [
+            0.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:main"
+        },
+        {
+          "sampler_name": "Depth",
+          "target": "minecraft:main",
+          "use_depth_buffer": true
+        },
+        {
+          "sampler_name": "Data",
+          "target": "flashlight_data"
+        },
+        {
+          "sampler_name": "Outline",
+          "target": "swap"
+        }
+      ],
+      "output": "minecraft:entity_outline",
+      "vertex_shader": "flashlight:post/spotlight",
+      "fragment_shader": "flashlight:post/spotlight"
+    }
+  ]
+}

@@ -1,0 +1,1912 @@
+FLASHLIGHT 1.8.1 — COMPLETE WIKI REFERENCE
+Minecraft Java / Paper — MrDino
+Edition: 25 October 2026
+Format: plain text, UTF-8
+Copyright (c) 2026 MrDino
+License: CC-BY-NC-ND-4.0 — see ../LICENSE for the complete official English text.
+Official license: https://creativecommons.org/licenses/by-nc-nd/4.0/
+
+FlashLight adds directional, battery powered flashlights to Minecraft Java.
+It combines a visible beam, textured surface illumination, shared player
+body shadows, and glare from another player's flashlight. The server runs
+the gameplay; a standard resource pack draws the lighting.
+
+This document describes the implementation included in this project. It
+is both an administrator's manual and a technical reference. Each numbered
+section can become a separate wiki page. Configuration names and command
+syntax are written exactly as they appear in the plugin. Explanations of
+limitations are part of the product description, not optional footnotes.
+
+The companion README is the shorter entry page. The release verification
+report records the exact artifacts and checks for this edition. Neither
+the documentation nor an isolated benchmark substitutes for testing a
+specific production server and its clients.
+
+
+CONTENTS
+
+  1. Product description and player requirements
+  2. Supported versions, Java, and choosing a download
+  3. First installation
+  4. Updating an existing installation
+  5. Player controls, hands, and item priority
+  6. Batteries, charge, and persistence
+  7. Crafting and custom item protection
+  8. Commands, selectors, timers, and examples
+  9. Permissions
+ 10. Complete default configuration
+ 11. Every lighting setting explained
+ 12. Shared lighting, camera tracking, and interpolation
+ 13. Shared player shadows
+ 14. Face glare
+ 15. Flicker and electrical faults
+ 16. Battery, sound, and recipe settings
+ 17. Resource pack delivery and HTTP hosting
+ 18. Nexo, TRP Server Edition, and StrobeLights
+ 19. Startup, ticks, reload, and shutdown
+ 20. Persistent item data
+ 21. Server beam calculation and collision caching
+ 22. Transporting optical data to the client
+ 23. GPU rendering and scene composition
+ 24. Alternative block-surface renderer
+ 25. Models, first-person optics, and third-person grip
+ 26. Technical compatibility between Minecraft versions
+ 27. Performance and diagnosing uneven movement
+ 28. Limits and accurate feature descriptions
+ 29. Troubleshooting
+ 30. Source code map
+ 31. Building, asset generation, and testing
+ 32. Suggested wiki structure and ready-to-use descriptions
+ 33. Primary references
+ 34. Verification of this release
+
+
+1. PRODUCT DESCRIPTION AND PLAYER REQUIREMENTS
+
+FlashLight is a Paper plugin intended for horror maps, exploration, and
+multiplayer scenes in which light needs direction, range, battery life,
+and controllable faults. It supplies a custom handheld flashlight and
+replacement batteries, with recipes and administrator commands.
+
+The lighting has two related parts: an illuminated cone in the air and a
+contribution on surfaces inside the cone. Walls, floors, players, mobs,
+and visible objects keep the textures and animations Minecraft has drawn.
+The plugin does not replace a lit player with a flat white silhouette.
+
+The server owns the flashlight's switch state, charge, scripted effects,
+collision sampling, and technical display entities. The resource pack
+interprets those controls and combines the light with the rendered scene.
+This division lets a normal server pack provide the effect without a
+separate client mod or a file installed in the shaderpacks directory.
+
+The main renderer does not place LIGHT blocks, alter world illumination,
+change mob behavior, or raise the light metadata of illuminated entities.
+Only private technical displays use the glowing flag to enter the native
+outline pipeline. A player's skin and a mob's own metadata stay intact.
+
+Every player who should see the result must load the correct resource
+pack. Accepting the pack is a functional requirement, not just a cosmetic
+recommendation. An item can still have server-side charge without it, but
+the client will lack the custom model and lighting renderer.
+
+Minecraft's rendering mode and installed rendering mods matter. The
+implementation uses the normal entity outline postprocessing path. Fancy
+and Fabulous are covered in the older renderer tests. External shaderpacks
+and some rendering mods can replace these stages. Begin client diagnosis
+with the normal renderer and no separate shaderpack selected.
+
+Player shadows remove the flashlight's added contribution where another
+body blocks it. They do not subtract natural daylight from the map. Glare
+brightens the observer's rendered view; it does not apply a blindness
+potion, inflict damage, or take control of the player's camera.
+
+
+2. SUPPORTED VERSIONS, JAVA, AND CHOOSING A DOWNLOAD
+
+The release contains four plugin files. Install exactly one on a server:
+
+  FlashLight-1.8.1-1.21.X.jar
+    Native Paper/Minecraft: 1.21.4, 1.21.5, 1.21.6, 1.21.7,
+    1.21.8, 1.21.9, 1.21.10, 1.21.11.
+    Server Java: 21.
+
+  FlashLight-1.8.1-26.1.X.jar
+    Native Minecraft family: 26.1, 26.1.1, 26.1.2.
+    Server Java: 25.
+
+  FlashLight-1.8.1-26.2.X.jar
+    Published native version covered by this edition: 26.2.
+    Server Java: 25.
+
+  FlashLight-1.8.1-26.3.X.jar
+    Published native version covered by this edition: 26.3.
+    Server Java: 25.
+
+The minimum is 1.21.4. Earlier 1.21 patches, older releases, snapshots,
+pre-releases, and 26.4 are outside this release's version list. The X in
+a filename identifies its distribution family. It does not automatically
+certify an unpublished future patch. ServerCompatibility reads the exact
+allowed versions embedded in that JAR and rejects a different version
+with a descriptive console message.
+
+All four branches share Java code compiled to Java 21 bytecode. That
+common bytecode can run on the newer JVM, but Paper/Minecraft 26.x still
+requires Java 25. Installing the correct plugin cannot reduce the server's
+own Java requirement.
+
+Each JAR embeds a branch-specific resource pack. Four separate pack ZIPs
+are also produced in build/distributions. The complete release ZIP groups
+those eight artifacts, the default configuration, this document, the
+README, the verification report, and checksums.
+
+Version support assumes matching native client and server rendering.
+ViaVersion or ViaBackwards can translate a protocol without translating
+the shader pipeline. FlashLight does not inspect every translated client
+and distribute an independently selected renderer to each one.
+
+There are thirteen client release profiles in the rendering checks. The
+native server matrix contains twelve published Paper versions: 26.1.1
+and 26.1.2 cover the available Paper 26.1 line; a plain Paper 26.1 release
+was not available in the retrieved release list. Do not describe that as
+thirteen full game sessions.
+
+
+3. FIRST INSTALLATION
+
+1) Check the Paper version and the JVM actually launching it.
+2) Copy the matching FlashLight JAR into the server's plugins directory.
+3) Start Paper. The plugin creates plugins/FlashLight/config.yml and exports
+   plugins/FlashLight/FlashLight-ResourcePack.zip.
+4) Choose a delivery provider. A supported Nexo/TRP installation can manage
+   the pack. Otherwise configure a direct ZIP URL or the built-in HTTP host.
+5) Load the pack in a native client. Check the client log if it reports a
+   failed resource reload.
+6) As an administrator, run /flashlight give.
+7) Hold the flashlight and right-click. Test a nearby wall before moving
+   to multiplayer, glare, and shadow checks.
+8) Check the other hand, third-person/F5 view, water behavior, and a second
+   player with the same pack loaded.
+
+Standalone defaults intentionally export without automatically publishing:
+resource-pack.url is empty, send-on-join is false, and the HTTP server is
+disabled. A local exported file is not a public download address. Copying
+its path into a browser on another machine does not host it.
+
+If using an external URL, upload the final exported pack and configure
+the SHA-1 of those exact bytes. If you change glare settings later, repeat
+that upload. If using Nexo/TRP, use its normal shared pack workflow rather
+than having two unrelated providers repeatedly replace the same shaders.
+
+
+4. UPDATING AN EXISTING INSTALLATION
+
+Stop Paper, replace the old FlashLight JAR, keep one plugin file, and
+restart. Keep the FlashLight data directory and existing items. Updating
+the JAR also requires distributing this release's resource pack. An old
+pack lacks the new local, shadow, and glare controls.
+
+The plugin name remains FlashLight, preserving its persistent namespace.
+Existing flashlight and battery identities remain recognized, and the
+resource pack identity is retained. Do not rename the plugin as an update
+method or install several branches side by side.
+
+ConfigUpdater adds missing keys on startup and on /flashlight reload.
+It preserves existing values, false, zero, empty lists, comments, and
+unknown custom keys. Before the first actual configuration update, it
+stores the original bytes as config.yml.before-update.bak. That first
+backup is not overwritten on every subsequent reload.
+
+If nothing is missing, the file is not rewritten merely to reformat it.
+Invalid YAML is rejected without replacing it with an empty/default file.
+Correct the original syntax and retry. Numeric clamping at settings load
+does not necessarily rewrite the source value in the YAML.
+
+Use /flashlight reload for configuration. It stops active sessions and
+rebuilds the renderer services. Use a server restart for replacing the
+JAR. Bukkit's global /reload is not the plugin's upgrade procedure.
+
+
+5. PLAYER CONTROLS, HANDS, AND ITEM PRIORITY
+
+  Right-click: toggle the held flashlight.
+  Sneak + right-click: try to replace its battery from inventory.
+  Put it away or transfer it: end its active session.
+
+Main-hand and off-hand operation are supported. Each player has one active
+session. Turning on another flashlight shuts down other enabled
+flashlights in that player's inventory, preventing several inventory
+items from acting as simultaneous emitters.
+
+Commands choose a held flashlight in this order: an enabled main-hand
+flashlight, an enabled off-hand flashlight, a disabled main-hand flashlight,
+then a disabled off-hand flashlight. A command does not search arbitrary
+storage slots and activate an item the player is not holding.
+
+A physical click can generate interaction events for both hands. When
+the main hand contains a flashlight, its interaction takes priority.
+There is also a five-tick switch debounce. This prevents two events from
+immediately undoing one another or consuming repeated interactions.
+
+Right-clicking air can arrive as an initially cancelled event in Bukkit.
+The listener still handles the flashlight interaction, then denies normal
+item/block use so the same click does not also use a vanilla item or open
+a clicked block. Ordinary entity interaction with the custom flashlight
+is likewise prevented from treating it as its vanilla base material.
+
+The plugin does not continuously send battery chat, action bars, or a HUD.
+Charge appears in the item's lore. Explicit commands respond to their
+executor. Scripts can therefore change many players' lights without
+automatically sending each target an extra status message.
+
+
+6. BATTERIES, CHARGE, AND PERSISTENCE
+
+Charge is a normalized value from 0 to 1. New flashlights start fully
+charged and switched off. The default duration is 900 seconds of active
+use at twenty ticks per second: fifteen minutes.
+
+For every active tick, the charge decrement is:
+
+  decrement = 1 / (battery.duration-seconds * 20)
+
+This is game time. Below 20 TPS, the same number of ticks takes more real
+seconds. The plugin does not subtract additional charge for wall-clock
+time that the server failed to process. Timed map effects follow the same
+game-tick principle.
+
+A switched-off flashlight does not drain. A dim flicker phase remains an
+active session and does drain. A non-waterproof light submerged at the
+eye block emits no visible light while its active session still drains.
+Creative mode does not independently bypass enabled battery consumption.
+
+At zero charge, the light switches off and its controls are removed.
+Low battery changes its visual model and fault frequency; it is not an
+additional permanent multiplier that silently halves every beam.
+
+To replace a battery, hold the flashlight, sneak, and right-click with a
+custom battery available in inventory. One replacement cell restores full
+charge; percentages are not added together. A nearly full flashlight
+does not waste a cell. A renamed vanilla PRISMARINE_SHARD does not count,
+because recognition uses persistent data rather than the display name.
+
+The session keeps precise charge in memory while active. Item data and
+appearance are synchronized on state/intensity changes and at least every
+twenty ticks. Stopping a session writes its current charge back, including
+the event paths for dropped or transferred stacks.
+
+There is no external player database. The charge belongs to the ItemStack
+and follows normal item saving/loading. The item's UUID also protects
+timers from restoring the state of a different flashlight later placed
+in the same hand.
+
+
+7. CRAFTING AND CUSTOM ITEM PROTECTION
+
+Flashlight, shaped 3 by 3:
+
+  [empty]       [GLASS_PANE]   [empty]
+  [IRON_INGOT]  [REDSTONE]     [IRON_INGOT]
+  [empty]       [COPPER_INGOT] [empty]
+
+Replacement battery, shapeless:
+
+  one COPPER_INGOT + one REDSTONE + one IRON_NUGGET
+
+The flashlight's base material is IRON_HORSE_ARMOR. It has its own item
+model, persistent identity, unbreakable flag, and maximum stack size of
+one. The battery's base material is PRISMARINE_SHARD.
+
+The pack supplies models in the flashlight namespace. It does not replace
+every vanilla horse armor or shard through assets/minecraft/items. Normal
+items keep their models and textures.
+
+Recipe preparation rejects results when custom flashlights or batteries
+are used as ingredients. This keeps them from becoming ordinary crafting
+materials or being recycled through an unrelated vanilla recipe. Anvil
+results containing a flashlight are blocked too.
+
+Reload removes and registers this plugin's recipes according to their
+settings. A recipe toggle controls creation through crafting; it does
+not make existing items cease to be recognizable.
+
+
+8. COMMANDS, SELECTORS, TIMERS, AND EXAMPLES
+
+Primary command: /flashlight
+Alias: /fl
+
+Paper's native command tree provides argument suggestions and unit hints.
+The traditional command executor is also present. Administrative help
+lines are shown according to the executor's permissions.
+
+  /flashlight help
+    Display the available help.
+
+  /flashlight give [targets]
+    Give a new, fully charged, switched-off flashlight to each target.
+
+  /flashlight battery [targets] [amount]
+    Give replacement cells. Amount: 1–64; default: 1 per player.
+
+  /flashlight recharge [targets]
+    Refill the held flashlight without consuming an inventory cell.
+
+  /flashlight on [targets] [duration]
+    Turn on the held flashlight if its user can use it.
+
+  /flashlight off [targets] [duration]
+    Turn off the held flashlight.
+
+  /flashlight flicker [targets] [duration] [strength_0_100] [pulse_interval]
+    Force a fault on a held, enabled flashlight.
+
+  /flashlight pack
+    Ask the active provider to send/reapply its pack to the executor.
+    Without a configured deliverable pack, show the exported file path.
+
+  /flashlight pack export
+    Show the local exported pack path. This does not upload the file.
+
+  /flashlight reload
+    Validate new settings, stop active sessions, and rebuild services,
+    resource pack handling, and recipes.
+
+TARGETS AND EXECUTION CONTEXT
+
+Targets accept exact online player names and native selectors, including
+@p, @a, @s, @r, and @a[distance=..10]. Native commands retain the source
+context of /execute as ... at ..., so selector location is meaningful.
+
+A player who omits a target acts on themselves. Console and command blocks
+must specify targets. Offline inventories are not opened or modified.
+Giving items to a full inventory drops leftovers at the player's location.
+
+DURATIONS AND PULSES
+
+  3s   = three seconds of game time = sixty ticks.
+  0.5s = ten ticks.
+  3    = three seconds.
+  40t  = forty ticks.
+
+Durations range from one tick to one hour. Pulse intervals must be at
+least two ticks. Strength is the percentage of power LOST in the dim
+phase: 40 retains 60%, 85 retains 15%, and 100 is a complete blackout.
+Without further arguments, forced flicker lasts 1.2 seconds and uses
+irregular three-to-five-tick phase changes.
+
+Timed on/off commands lock the switch for the interval and restore the
+previous state afterward. Restoration checks the same item UUID and held
+item. Moving to a different flashlight does not transfer the old timer's
+restoration to the replacement. An untimed change remains in effect.
+
+Examples for map scripts:
+
+  /flashlight give @a
+  /flashlight battery @p 4
+  /flashlight on @p
+  /flashlight off @a 5s
+  /flashlight on Explorer 40t
+  /flashlight flicker @p 3s 85 4t
+  /flashlight flicker @a 2s 100
+  /execute as @a at @s run flashlight flicker @s 3s 40 5t
+
+Targeted commands return the number of affected players for conditional
+command logic. Successful execution by an administrator does not waive
+the target's use conditions, such as allowed world, usable charge, and
+permission to use the item.
+
+
+9. PERMISSIONS
+
+flashlight.use
+  Default: true.
+  Allows flashlight use and battery replacement.
+
+flashlight.pack
+  Default: true.
+  Allows requesting the active pack or consulting its exported path.
+
+flashlight.admin
+  Default: op.
+  Allows giving items, free recharge, forced on/off, scripted flicker,
+  and configuration reload.
+
+Basic help is available without exposing administrative lines to everyone.
+For a permissions plugin, grant these nodes explicitly to the intended
+groups rather than relying on operator status for ordinary gameplay.
+
+
+10. COMPLETE DEFAULT CONFIGURATION
+
+This is the functional default configuration. The distributed config.yml
+also includes English comments. Indentation matters in YAML.
+
+light:
+  entities:
+    enabled: true
+  shared-light: true
+  local-camera-tracking: true
+  interpolation-ticks: 2
+  shadows:
+    enabled: true
+    max-casters: 8
+    update-interval-ticks: 2
+  glare:
+    enabled: true
+    strength: 0.65
+    max-distance: 12
+  update-interval-ticks: 2
+  range: 20.0
+  cone-angle-degrees: 28.0
+  max-brightness: 12
+  beam-visibility: 1.0
+  follow-player-movement: true
+  follow-smoothing: 0.38
+  max-surface-patches: 12
+  surface-cell-budget: 128
+  breathing-amount: 0.003
+  walking-sway-amount: 0.009
+  waterproof: false
+  disabled-worlds: []
+
+flicker:
+  enabled: true
+  min-interval-seconds: 25
+  max-interval-seconds: 65
+  min-duration-ticks: 12
+  max-duration-ticks: 28
+  strength-percent: 100
+  low-battery-multiplier: 2.5
+
+battery:
+  enabled: true
+  duration-seconds: 900
+  low-threshold-percent: 20
+  crafting-enabled: true
+
+effects:
+  sounds: true
+
+crafting:
+  flashlight-enabled: true
+
+resource-pack:
+  nexo:
+    enabled: true
+    integration: AUTO
+    auto-rebuild: true
+  url: ''
+  sha1: ''
+  send-on-join: false
+  required: false
+  prompt: 'Load FlashLight flashlight models and lighting.'
+  server:
+    enabled: false
+    bind: '0.0.0.0'
+    port: 8192
+    public-url: ''
+
+
+11. EVERY LIGHTING SETTING EXPLAINED
+
+light.entities.enabled — default true
+  Selects scene-based per-pixel lighting on blocks and entities. False
+  chooses the older block-surface renderer. The historical setting name
+  is retained, but its scope now selects the full rendering path. It is
+  not merely a filter that excludes mobs while leaving every other part
+  of the main renderer running.
+
+light.shared-light — default true
+  Makes flashlight controls visible to other players. False restricts
+  lighting to its owner. This also controls visibility of fallback
+  displays. Normal server entity tracking distance still bounds which
+  controls can reach a client.
+
+light.local-camera-tracking — default true
+  Enables a private optical control for the owner in the main renderer.
+  The shader derives the local first-person beam from the current camera
+  pose each rendered frame. Server state, power, and collision limits
+  still update in server ticks. See section 12 for F5 detection limits.
+
+light.interpolation-ticks — default 2; range 1–5
+  Smooths remote precise controls and shared shadow bodies. Increasing
+  it also increases visible lag. The private control uses one tick plus
+  the camera correction. Static fallback faces keep zero interpolation
+  so they do not drift through the surfaces they represent.
+
+light.update-interval-ticks — default 2; range 1–5
+  Normal collision refresh interval during movement. It does not lower
+  the frequency of orientation processing to one update every two ticks.
+  Large changes and nearby block invalidation can force an earlier scan.
+  Idle geometry is reused only for a bounded time.
+
+light.range — default 20.0; range 4–32 blocks
+  Maximum optical reach. The compact shader parameters quantize it to
+  whole blocks. A larger reach potentially affects more scene pixels and
+  increases collision work. It does not force the server to load chunks
+  or make a client track displays beyond normal tracking range.
+
+light.cone-angle-degrees — default 28.0; range 4–65 degrees
+  TOTAL opening angle, not half-angle. Cone radius uses the tangent of
+  half this angle. Compact transport quantizes it to integer degrees.
+  A wide cone covers more surfaces and more potential shadow casters.
+
+light.max-brightness — default 12; range 4–15
+  Relative optical power, normalized as brightness / 15. A value of 12
+  gives a base factor of 0.8. This is not a Minecraft block light level.
+  Setting 15 does not write level fifteen into world blocks or entities.
+
+light.beam-visibility — default 1.0; range 0–3
+  Controls the cone in the air independently of direct surface lighting.
+  Zero hides the air contribution while preserving the surface light
+  and glare. It does not increase reach. This value travels in display
+  metadata, so changing it does not require a freshly downloaded pack.
+  The fallback volume retains its legacy codec saturation limits.
+
+light.follow-player-movement — default true
+  Sends the current server direction directly. False adds directional
+  inertia through follow-smoothing. Local camera tracking is independent:
+  disable it too if you specifically want to observe server-side inertia
+  on your own first-person beam.
+
+light.follow-smoothing — default 0.38; range 0.05–1
+  Directional blend weight when direct following is disabled. A value
+  closer to one reaches the target direction sooner. It has no effect
+  on direct tracking and does not speed up an overloaded server.
+
+light.max-surface-patches — default 12; range 2–24
+  Maximum projected faces in the fallback renderer. The main renderer
+  evaluates visible pixels instead and is not restricted to twelve
+  illuminated walls or entities.
+
+light.surface-cell-budget — default 128; range 32–256
+  Bounds the fallback face scan. Increasing it can find more geometry
+  at additional CPU cost. It is not a client texture resolution setting.
+
+light.breathing-amount — default 0.003; range 0–0.03
+  Small vertical oscillation in the server beam direction. Zero removes
+  it. Camera correction uses a stable camera-derived pose and therefore
+  does not reproduce every server oscillation in the owner's local ray.
+
+light.walking-sway-amount — default 0.009; range 0–0.05
+  Lateral server beam sway based on movement. The same local camera
+  distinction applies. It is separate from Minecraft's view bobbing.
+
+light.waterproof — default false
+  False suppresses visible light when the player's eye block is liquid.
+  True permits underwater emission and skips WATER for beam collision.
+  It does not remove the client's water tint/refraction or make lava
+  behave like water. An active suppressed session still consumes charge.
+
+light.disabled-worlds — default []
+  World names in which active use is refused. For example:
+    disabled-worlds: [lobby, minigames]
+  Match actual server world names rather than a display label supplied
+  by another plugin.
+
+The settings loader bounds numeric values to supported intervals. Options
+using finite validation fall back for non-finite input. The effective
+runtime value can therefore differ from an out-of-range source value.
+Inspect the documented range before assuming the YAML was ignored.
+
+
+12. SHARED LIGHTING, CAMERA TRACKING, AND INTERPOLATION
+
+Earlier, one technical display supplied both the owner and observers.
+Its orientation passed through the server for everyone. On a server with
+uneven ticks, the player's mouse could turn well ahead of that display.
+
+With local tracking enabled, the main renderer maintains a shared control
+and a private owner control. The owner hides the shared copy and receives
+the private one. Other players receive the shared copy. Both represent
+the same optical slot; one client should never add both contributions.
+
+Private markers distinguish left and right optical poses. If the decoded
+origin is within 2.2 blocks of the camera, the shader substitutes the
+generated first-person origin and axis in camera space. Turning the
+camera can then steer the beam each frame without waiting for another
+server orientation packet.
+
+When the camera is farther away, as normally occurs in F5, the control
+keeps its world-space ray. This is proximity detection, not a client API
+that explicitly reports first/third person. F5 compressed against a wall
+can enter that threshold. That edge case remains a limitation of a pack
+without a client mod.
+
+Remote controls interpolate over two ticks by default, nominally 100 ms
+at 20 TPS. Higher interpolation smooths sparse updates but adds delay;
+when TPS falls, the same tick interval lasts more real time. Raising it
+indefinitely is not a fix for an overloaded server.
+
+Switches, charge, faults, collision bounds, and other people's positions
+still come from the server. A frozen server cannot process a right-click
+even when a camera-derived local ray turns smoothly. The change targets
+steering delay, not every possible cause of low FPS, lag, or stutter.
+
+The main renderer allocates at most 32 flashlight slots per world. A local
+copy does not allocate a second independent light slot or double its
+brightness. Viewers still depend on normal entity tracking and having
+the correct pack loaded.
+
+
+13. SHARED PLAYER SHADOWS
+
+light.shadows.enabled — default true
+  Enables shared body controls for players that can intercept another
+  flashlight. Requires the main scene renderer.
+
+light.shadows.max-casters — default 8; range 1–8 per world
+  Caps simultaneous body controls. Existing casters retain their slots;
+  new candidates are considered in UUID order for stable selection.
+  Beyond the cap, not every player can receive an off-screen body proxy.
+
+light.shadows.update-interval-ticks — default 2; range 1–10
+  Selection/position refresh interval. Body displays interpolate between
+  updates according to light.interpolation-ticks.
+
+The server considers online players in an active emitter's world. Dead,
+invisible, and spectator players are excluded. A conservative bounding
+test selects bodies that might intersect a cone belonging to someone
+else. The flashlight owner is not selected as its own emitter's blocker.
+
+Each selected player gets a technical display carrying center, vertical
+axis, height, and horizontal radius. The shader tests the segment from
+the light to a surface against that body. This works when the blocker
+is outside the observer's screen and therefore absent from scene depth.
+
+The proxy is a soft vertical ellipsoid based on the current bounding box.
+It follows crouching/size changes but does not transmit skin bones,
+animated fingers, separate arms and legs, armor geometry, or capes. It
+provides a bounded and stable body shadow rather than a skeletal shadow
+map. Visible scene depth continues to supply additional real geometry.
+
+The receiving point must lie beyond the body's exit along the segment.
+This avoids treating the front surface of an illuminated receiver as a
+wall that must be dark just because it lies inside its own approximation.
+
+Shadow controls are hidden by default and shown only to observers in the
+same world who can see that player through Player.canSee. A hidden player's
+technical body should not reveal them through an unrelated observer.
+Controls are removed when no longer relevant or when lighting stops.
+
+Only players receive these off-screen body proxies. The plugin does not
+scan every mob in the world each tick. Visible creatures can still obstruct
+the depth-based ray. Body proxies affect added direct light and face glare;
+they do not create a full physical volumetric shadow simulation through
+every sample of the visible air beam.
+
+Turning off shadows removes the additional body controls. The ordinary
+scene depth obstruction remains part of direct illumination. In a bright
+room, removing a small flashlight contribution may produce a subtle
+shadow because the map's natural light is deliberately preserved.
+
+
+14. FACE GLARE
+
+light.glare.enabled — default true
+  Enables the view effect when another flashlight is aimed at the eyes.
+
+light.glare.strength — default 0.65; range 0–1
+  Scales glare power. Zero contributes no face glare.
+
+light.glare.max-distance — default 12; range 1–32 blocks
+  Maximum distance, additionally limited by the flashlight's own range.
+
+The shader checks whether the camera lies inside the other light's cone
+and whether its lens is in front of the observer. Central aim produces
+more glare than the cone edge. Looking toward the source produces more
+than keeping it at the edge of the view.
+
+Distance uses a quadratic falloff:
+
+  distance factor = (1 - distance / effective maximum distance)^2
+
+This factor is multiplied by optical power, configured strength, radial
+alignment, view direction, and body visibility. Scene depth obstruction
+and shared bodies are checked, so a visibly blocked source should not
+create the same flash through a wall.
+
+The result combines a warm veil with a concentrated highlight around
+the projected lens position. It changes continuously with aim and distance.
+A flicker blackout suppresses it with the beam. The owner control is
+marked to prevent the owner's own flashlight from dazzling that camera.
+
+It is an image effect. It does not add blindness status, change movement,
+modify sensitivity, or use a server timer to decide how long a player
+must remain dazzled after looking away.
+
+Glare values are encoded in the small technical pack sprites. Reload
+regenerates the exported ZIP. Clients must receive and load that ZIP before
+these changes apply. Supported Nexo handling can rebuild its pack; an
+external URL requires uploading the new file and updating its SHA-1.
+Changing only the YAML does not remotely replace resources already loaded
+in a player's client.
+
+
+15. FLICKER AND ELECTRICAL FAULTS
+
+flicker.enabled — default true
+  Enables random faults. False leaves command-forced flicker available,
+  allowing a map to control every event explicitly.
+
+flicker.min-interval-seconds — default 25; range 2–3600
+flicker.max-interval-seconds — default 65; range 2–3600
+  Random wait between faults in game seconds. The effective maximum is
+  never below the minimum. Seconds are converted to ticks.
+
+flicker.min-duration-ticks — default 12; range 4–100
+flicker.max-duration-ticks — default 28; range 4–100
+  Random fault duration. These units are ticks rather than seconds.
+  The maximum is also kept at or above the minimum.
+
+flicker.strength-percent — default 100; range 0–100
+  Percentage lost in the dim phase. With 100 the beam goes out; with 40
+  it retains sixty percent. Random and scripted faults use the same
+  meaning of strength.
+
+flicker.low-battery-multiplier — default 2.5; range 1–10
+  Divides the random waiting interval when charge is low. Increasing it
+  makes faults more frequent. The scheduled wait retains a twenty-tick
+  minimum.
+
+FlashlightState tracks the next random fault, its end, and phase changes.
+A forced fault starts in the dim phase. Later phases alternate dim/full.
+At the end, normal power returns and the next random fault is scheduled,
+including the case where the last phase was already full power.
+
+Partial dimming is transported with eight-bit intensity resolution. A
+full blackout is immediate; a glowing model is not left visually on while
+the beam is supposed to be off. Air, direct lighting, and glare all use
+the current power. Charge continues to drain during an active fault.
+
+
+16. BATTERY, SOUND, AND RECIPE SETTINGS
+
+battery.enabled — default true
+  Enables charge requirements and consumption. False allows use without
+  drain while retaining item identity and stored charge.
+
+battery.duration-seconds — default 900; range 10–86400
+  Active life at 20 TPS. Converted into ticks for the state machine.
+
+battery.low-threshold-percent — default 20; range 1–90
+  Threshold for the low-charge appearance and increased fault frequency.
+
+battery.crafting-enabled — default true
+  Registers the replacement battery recipe when enabled.
+
+crafting.flashlight-enabled — default true
+  Registers the flashlight recipe when enabled.
+
+effects.sounds — default true
+  Enables switch clicks, replacement/failure sounds, depletion, and small
+  pulse sounds. It does not add a HUD or repeated chat status messages.
+
+For an exploration map with scripted power failures, a useful arrangement
+is to disable random flicker while keeping battery consumption enabled.
+For a cinematic scene, disable battery consumption and invoke explicit
+on/off/flicker commands. These are configuration examples, not separate
+modes with hidden extra behavior.
+
+
+17. RESOURCE PACK DELIVERY AND HTTP HOSTING
+
+The JAR contains pack/FlashLight-ResourcePack.zip. PackService resolves
+the server's exact shader profile, applies glare tuning, and exports the
+result into the plugin directory. The ZIP in build/distributions is a
+branch distribution; the exported ZIP is the final server-specific pack
+with current tuning. Use the exported file for customized external hosting.
+
+EXTERNAL URL
+
+resource-pack.url — default empty
+  Direct HTTP(S) URL to the ZIP. It must be downloadable by clients,
+  rather than an account-protected page or a preview/share web page.
+
+resource-pack.sha1 — default empty
+  Optional forty-character hexadecimal SHA-1 of the hosted file. If set,
+  it must match that exact ZIP. A JAR update does not change bytes hosted
+  elsewhere. PowerShell can calculate it with:
+    Get-FileHash -LiteralPath 'FlashLight-ResourcePack.zip' -Algorithm SHA1
+
+resource-pack.send-on-join — default false
+  Requests the standalone pack thirty ticks after join if the player is
+  still connected. Provider integrations manage their own delivery.
+
+resource-pack.required — default false
+  Marks standalone delivery as required. Minecraft handles acceptance or
+  failure according to its pack mechanism. Nexo/TRP retain their provider
+  configuration when they own delivery.
+
+resource-pack.prompt
+  Text shown with the standalone pack request. Keep it in English if
+  maintaining the language of this distribution.
+
+BUILT-IN HTTP HOST
+
+resource-pack.server.enabled — default false
+resource-pack.server.bind — default 0.0.0.0
+resource-pack.server.port — default 8192; valid range 1–65535
+resource-pack.server.public-url — default empty
+
+When enabled, public-url must be a valid public HTTP(S) base with a host
+and no query or fragment. For example: https://packs.example.com. Clients
+receive a path such as /packs/<sha1>.zip appended to that base.
+
+The bind address selects the listening interface. 0.0.0.0 is not a public
+client URL. A reverse proxy, router, or hosting setup must route the
+published URL to the configured listener. The plugin does not configure
+DNS, certificates, firewall rules, or port forwarding.
+
+GET and HEAD are supported. Other methods receive 405; paths other than
+the current pack receive 404. The response includes type, length, ETag,
+and immutable caching tied to its content hash. Two daemon worker threads
+serve the pack. The content-addressed URL changes when the bytes change.
+
+An explicit external URL takes priority over the built-in host for
+standalone requests. Nexo/TRP provider selection takes precedence over
+standalone delivery. The plugin avoids starting competing delivery when
+an integration owns the shared pack.
+
+Repeated standalone requests are throttled for five seconds. This limits
+accidental request spam; it does not diagnose a download error. To verify
+a URL, download it from a machine on the same network as the client and
+check that it contains a ZIP rather than an HTML error page.
+
+
+18. NEXO, TRP SERVER EDITION, AND STROBELIGHTS
+
+These are optional integrations. FlashLight works standalone. A supported
+FlashLight server branch does not make an old external plugin's shader
+compatible with a newer Minecraft renderer.
+
+NEXO SETTINGS
+
+resource-pack.nexo.enabled — default true
+  Detects a supported enabled Nexo provider.
+
+resource-pack.nexo.integration — default AUTO
+  AUTO chooses MultiPack on supported Nexo 1.27+ installations and merged
+  external packs on older versions. MULTIPACK explicitly requires the
+  newer mechanism. MERGED explicitly uses external_packs.
+
+resource-pack.nexo.auto-rebuild — default true
+  Requests a rebuild when managed ZIP content or registration changes.
+  It does not repeatedly rebuild an unchanged pack every tick.
+
+For MultiPack, the ZIP is installed under Nexo/pack/template_packs and a
+template is registered in multipack.yml. New registrations default to
+required/default. Existing administrator values, including required:
+false and default: false, are preserved rather than overridden.
+
+Merged mode installs Nexo/pack/external_packs/FlashLight-ResourcePack.zip.
+Managed files are validated before writing, and first backups are kept.
+The integration avoids registering the same pack in both managed folders.
+
+Installation waits for Nexo's initial generation. File work occurs off
+the main thread; rebuild commands return to the main thread. Pending
+handoffs are cancelled when closing. Nexo owns hosting and sending, so
+FlashLight does not also send an unrelated ZIP or keep its own HTTP host
+running alongside that provider.
+
+TRP SERVER EDITION
+
+The adapter uses TRP's reflective overlay API. It preserves the provider's
+shader branch and adds a branch for FlashLight markers. Legacy composition
+shares TRP interpolants to remain within GPU limits. Normal, unmarked
+objects continue through the host renderer.
+
+Registration first tries the shared Nexo provider when present, then TRP's
+embedded provider. /flashlight pack delegates resending to the active
+provider instead of sending a conflicting standalone pack.
+
+FlashLight supplies entity_outline.json, not a replacement transparency
+graph that discards the provider's effects. Minecraft 26.3 uses its newer
+transparency path, and its FlashLight branch preserves the relevant OIT
+phases rather than retaining a removed legacy graph.
+
+STROBELIGHTS WITHOUT TRP
+
+The adapter looks for StrobeLights' embedded pack matching the native
+Minecraft version. Equivalent shader profiles cover 1.21.7/8 from 1.21.6,
+1.21.10/11 from 1.21.9, and the 26.1 hotfixes from 26.1. When present,
+Strobe's utility include is copied privately to avoid namespace collisions.
+
+If no compatible external resource is exposed, the plugin warns and keeps
+its native export. That fallback is not proof that two incompatible
+renderers can be combined. Update or correct the external provider before
+publishing the combined setup.
+
+The regression suite includes legacy TRP 0.4.18 and StrobeLights 0.10.37
+shader fixtures plus integration contracts. It does not run every version
+of Nexo, TRP, and StrobeLights across the entire Paper matrix. Validate the
+actual combination and download path used on the target server.
+
+
+19. STARTUP, TICKS, RELOAD, AND SHUTDOWN
+
+STARTUP
+
+The plugin saves its default configuration if absent, checks the JAR's
+supported version list, merges missing settings, and constructs validated
+runtime settings. It creates item helpers, performs legacy temporary-light
+recovery in loaded chunks, exports/configures its pack, starts the active
+service, registers recipes, and registers commands and listeners.
+
+The renderer removes abandoned ItemDisplays carrying its own persistent
+control keys. It does not delete unrelated displays simply because they
+have the same entity type. New technical controls are non-persistent,
+limiting what can remain after a normal server save or restart.
+
+TICK PROCESSING
+
+One scheduled service advances tick timers and sessions. It selects the
+held item, checks permission/world/death/spectator conditions, advances
+charge and faults, updates optics, and synchronizes appearance when needed.
+After the light updates, it refreshes the bounded shared shadow set when
+its configured interval is due. Controls are reused rather than spawning
+a new entity for every frame or scanning every lit mob.
+
+RELOAD
+
+New settings are parsed and validated before the active service is shut
+down. The old tick task is cancelled, sessions are saved/stopped, controls
+are removed, and pack services close. New pack and gameplay services are
+constructed with the replacement settings; recipes are registered again.
+
+Rebuilding the service matters because renderer selection is construction
+state. Merely replacing a settings record would leave a renderer created
+for the old entities.enabled mode active. The current reload applies that
+mode change and the new control visibility/ownership rules.
+
+Active flashlights switch off deliberately during reload. Players can turn
+them on again afterward. A pack export or integration failure should be
+investigated in the console rather than assuming that the client received
+the newly generated resources.
+
+SHUTDOWN AND EVENT CLEANUP
+
+Shutdown cancels the task, writes pending item state, removes light/shadow
+controls, clears legacy recovery work, closes HTTP/integration services,
+and removes this plugin's recipes.
+
+Held-slot changes, inventory movement, hand swaps, dropping, death, quit,
+teleport/world transitions, and putting the item away stop its session.
+The purpose is to prevent a light continuing from an item no longer held,
+and to keep charge attached to the actual transferred stack.
+
+
+20. PERSISTENT ITEM DATA
+
+The plugin's PersistentDataContainer namespace contains:
+
+  kind — STRING
+    The value flashlight or battery identifies the custom item type.
+
+  id — STRING
+    A flashlight UUID, assigned when identity is needed. Timed restoration
+    checks it so an unrelated replacement item is not affected.
+
+  charge — DOUBLE
+    Remaining charge normalized to 0–1. Invalid non-finite stored charge
+    falls back to a full charge, and finite values are bounded.
+
+  enabled — BYTE
+    Switch state, represented by zero or one.
+
+Item model names are flashlight:flashlight_off, flashlight:flashlight_on,
+flashlight:flashlight_low, and flashlight:battery. Visible names and lore
+use Adventure components with italics disabled. Charge lore rounds upward
+to an integer percentage; internal charge retains its fractional value.
+
+The CustomModelData component also carries seven floating-point values:
+intensity, range, opening angle, normalized brightness, smoothing,
+breathing, and walking sway. This metadata is separate from the compact
+technical display word used by the main scene renderer.
+
+Identification does not depend on a translated name, lore line, or player
+renaming a vanilla material. Keeping the namespace and persistent keys
+stable is why ordinary plugin updates can preserve existing items.
+
+
+21. SERVER BEAM CALCULATION AND COLLISION CACHING
+
+BeamRenderer starts with the player's eye location and direction. It can
+apply server breathing/walking sway and direct or smoothed directional
+following. HeldItemPose transforms the generated lens origin and axis
+into world coordinates, accounting for handedness and the held slot.
+
+The lens definition comes from the same model geometry and first-person
+transforms included in the resource pack. This avoids choosing an arbitrary
+point beside the camera that disagrees with the visible glass. First-person
+camera tracking reuses generated constants for the same reason.
+
+The collision sampler distributes thirteen rays: one central, eight on an
+outer ring, and four on an inner ring. BeamSampler and VoxelRay traverse
+cells and use actual block collision boxes. Partial blocks therefore do
+not behave as if every occupied cell were a full cube.
+
+Air and administrative invisible blocks such as BARRIER, LIGHT, and
+STRUCTURE_VOID are ignored for beam obstruction. Waterproof mode can
+skip water as well. A ray does not request a new chunk just to extend a
+flashlight. Reaching an unloaded boundary limits that sample.
+
+Thirteen samples are finite. They bound visible reach and supplement
+screen-depth tests; they are not an exhaustive physical ray trace through
+every possible line in the cone. Thin or off-screen geometry can retain
+approximation limits, especially during rapid changes.
+
+Tracking and collision discovery are separate. The control's position and
+direction can update every tick while the last useful geometry is reused.
+A moving scan normally uses light.update-interval-ticks. Large direction
+changes, sufficient displacement, changed settings, or nearby invalidation
+force a scan. Idle geometry expires within ten ticks.
+
+Caches hold collision shapes, loaded-chunk queries, and reusable results.
+Block placement/breaking, physics, pistons, liquids, and explosions near
+an active area invalidate relevant geometry. Changes made by another
+plugin without those events become visible when the cache expires. Cache
+growth is bounded rather than retaining an unlimited history of visited
+cells.
+
+The main renderer bypasses the fallback surface-cell walk and per-face
+display generation. It still needs collision bounds and optical controls.
+It does not perform an entity search for every illuminated player or mob:
+those receivers already exist in the scene image.
+
+
+22. TRANSPORTING OPTICAL DATA TO THE CLIENT
+
+Technical ItemDisplays carry a small plane model. They are silent,
+invulnerable, gravity-free, non-persistent, and have no vanilla ground
+shadow. Their glowing outline participates in the native outline stage.
+The entities being illuminated do not receive glowing from FlashLight.
+
+Each light's glow color carries a 24-bit RGB word:
+
+  bits  0–4:  light slot, 0–31.
+  bits  5–12: power, 0–255.
+  bits 13–17: range, offset from four blocks.
+  bits 18–23: total opening angle, offset from four degrees.
+
+The lowest word byte becomes red, the next green, and the next blue.
+Power is rounded to eight-bit resolution; range and angle are rounded to
+the compact integer representation. Display transformation encodes the
+axis, visible reach, and air visibility. Origin comes from the display's
+position. Unchanged words, transforms, and origins are not reapplied.
+
+Reserved texture markers distinguish shared, owner-right, owner-left,
+and body controls. Glare configuration occupies the center of the small
+technical sprites while the identifying border remains stable. This
+keeps tuning from accidentally making a data control look like a normal
+object or breaking marker detection.
+
+The outline shader maps these planes into a tiny data strip. Screen-space
+derivatives recover their axes/center in camera space. Floating-point
+values are encoded into four eight-bit channels so an RGBA8 target can
+carry their bit representation rather than a low precision color guess.
+
+The fixed data target is 27 by 160 pixels:
+
+  rows   0–127: 32 flashlight slots, four rows each.
+  rows 128–159:  8 player body slots, four rows each.
+
+The useful columns are:
+
+   0:    identifying header.
+   1–3:  light origin or body center.
+   4–6:  light direction or body vertical axis.
+   7:    packed RGB light parameters.
+   8–23: camera projection matrix, sixteen components.
+  24:    visible reach; body half-height for a shadow control.
+  25:    air visibility; horizontal radius for a shadow control.
+  26:    glare parameters and local-control flag.
+
+The normal outline detector removes the technical strips before visible
+composition. Ordinary entity outlines still follow their normal path.
+A horizontal data stripe or colored rectangle on screen is a rendering
+fault, usually indicating mismatched resources or a shader conflict.
+
+
+23. GPU RENDERING AND SCENE COMPOSITION
+
+The pack's entity_outline graph has five passes:
+
+  1) control_copy copies the encoded data to the fixed small target.
+  2) outline computes ordinary edges and removes technical markers.
+  3) the native horizontal outline blur.
+  4) the native vertical outline blur.
+  5) spotlight combines scene color/depth, optical data, and outlines.
+
+The vertex stage identifies active slots, decodes projection and inverse
+projection, preloads the first light, and decodes shared body parameters.
+Bodies travel as flat interpolants so every fragment/light does not have
+to fetch the full body table again. Active masks let loops skip missing
+slots and stop after the last relevant control.
+
+SURFACE RECONSTRUCTION
+
+The shader maps a screen coordinate and sampled depth through the inverse
+projection matrix, then divides by homogeneous w to recover the visible
+point. Neighboring depth samples estimate a surface normal. This result
+is shared while evaluating the lights affecting that pixel.
+
+Minecraft 26.3 can use the newer zero-to-one clip-depth convention. Its
+branch handles the relevant backend definition rather than assuming the
+older minus-one-to-one reconstruction everywhere. Depth comparisons and
+projection must use the same convention or obstruction breaks.
+
+CONE AND ATTENUATION
+
+For each light, the shader evaluates axial distance, radial distance,
+opening, range, power, and visible collision reach. Pixels outside the
+cone/range retain their original scene color. The edge is softened and
+the center has a stronger hotspot.
+
+Distance attenuation is approximately:
+
+  distance falloff = 1 / (1 + distance^2 / 36)
+  end transition  = smoothstep(0.65 * range, range, distance)
+  attenuation     = distance falloff * (1 - end transition)
+
+At six blocks, before the final transition applies, half the initial
+contribution remains. The last 35% of the configured range fades smoothly
+to zero. Brightness settings scale this relative effect rather than
+writing a real light level into a world block.
+
+Direct light increases exposure of the color already rendered. Peak
+compression preserves color/detail and the result is kept from darkening
+the original scene. This also explains a limitation: a completely black
+pixel contains no texture detail to recover by increasing exposure.
+
+OCCLUSION, SHADOWS, AND AIR
+
+The depth obstruction function checks ten samples between source and
+receiver. Shared ellipsoid tests additionally suppress direct light
+behind selected player bodies, including bodies absent from screen depth.
+These methods complement one another; neither is a global shadow map of
+all world geometry.
+
+The air beam integrates ten samples along the camera ray inside the cone,
+stopping at scene depth and the visible reach. It is evaluated in the
+postprocess rather than writing an opaque carrier over the player/wall.
+The new body proxies do not convert this into full volumetric shadow
+tracing for every body and every air sample.
+
+COMPOSITION AND DEPTH PRESERVATION
+
+The output represents a color difference as a normal alpha layer. The
+postprocessing passes do not target minecraft:main and clear its scene
+depth. Minecraft's native outline blit composes the final result while
+leaving the depth used by later particles/weather intact.
+
+This matters because a visually correct flashlight can still be broken
+if its postpass erases depth: hidden particles or rain would then draw
+through solid walls. The regression checks verify the unchanged depth
+buffer as well as the visible light.
+
+Ordinary added-light coverage is capped at 40% to preserve water and
+other materials composed afterward. Face glare can raise the coverage
+in a controlled way. Ordinary entity outlines remain above the added
+contribution. Fancy/Fabulous and the 26.3 transparency path retain their
+native ordering rather than pretending every material is opaque.
+
+
+24. ALTERNATIVE BLOCK-SURFACE RENDERER
+
+Setting light.entities.enabled to false selects the earlier rendering
+path. It uses an analytic volume plus up to max-surface-patches projected
+faces. It does not supply the main renderer's entity illumination, private
+camera correction, shared body proxies, or face glare.
+
+SurfaceSampler discovers collision faces reached by the cone, groups
+planes, walks a bounded set of cells, and merges adjacent regions.
+SurfaceProjection computes the geometric footprint and encodes it into
+the display's model, color, brightness, and transform.
+
+An oblique cone/plane section can be elliptical. A grazing intersection
+can require a hyperbolic representation, as when aiming almost parallel
+to a floor. The surface_... and surface_h_... model families encode these
+cases. They are a finite geometric approximation rather than an arbitrary
+painted circle placed on the nearest block.
+
+SurfaceAssignments retains a display for the same face when sample order
+changes. Plane light is area-weighted so splitting a wall into several
+patches does not independently multiply its brightness.
+
+Static projected faces use zero interpolation. Interpolating their world
+position would make them slide between different surfaces and cut through
+walls. The air volume keeps its short legacy interpolation.
+
+The default maximum is thirteen displays per fallback flashlight: twelve
+faces and one volume. The main mode usually needs two technical controls
+with local tracking, plus shared world body controls. Switching to the
+fallback therefore does not automatically reduce server work.
+
+Shared-light visibility also applies to fallback displays. Its separate
+patch and cell budgets only affect this route; they do not limit how many
+visible surfaces the main shader can illuminate within its cone.
+
+
+25. MODELS, FIRST-PERSON OPTICS, AND THIRD-PERSON GRIP
+
+The original Blockbench source is models/source/Flashlight.bbmodel. The
+editable adaptation is models/Flashlight-adaptada.bbmodel, and the
+conversion details are in models/conversion-report.json.
+
+The importer reconstructs the supplied triangulated geometry using legal
+Java model elements, bakes triangle UVs into an atlas, and identifies the
+reflector parts for off/on/low appearances. Conversion uses uniform scale
+and records geometric checks. It does not replace the design with an
+unrelated generic flashlight.
+
+The item definitions choose first-person versus other-context models.
+Both hands have their own display transforms. The first-person scale is
+0.50, with an inward framing and the switch on the upper/inner side.
+The original switch texture remains an ordinary visible texture; it is
+not used as a control-data sprite.
+
+The 1.8.0 translation-only correction left the third-person lens pointing
+backward through Minecraft's native hand rotation. Its grip check also
+allowed the handle to sit below the actual hand box. Version 1.8.1 corrects
+both orientation and position for both third-person hands:
+
+  rotation:    [90, 0, 180]
+  translation: [0, 0, 1]
+  scale:       [0.32, 0.32, 0.32]
+
+Combined with native ItemInHandLayer and ItemTransform operations, this
+points the lens along the hand's forward axis (-Z), rolls the switch above
+the body, and places the handle inside the fist. The native arm's local Y
+bounds run from -2 to 10 model units; its shoulder translation applies to
+both the arm and held item. Confusing those bounds with 0 to 12 permits a
+visibly floating grip.
+
+Regression checks cover all six on/off/low and plain models in both hands.
+They verify fist overlap, forward lens position, level lens alignment,
+and the switch above the grip, including native left-hand mirroring. The
+previous 1.8.0 models fail the forward-direction check. A technical render
+is included at docs/third-person-grip-preview.png; its blue hand references
+are diagnostic geometry, never exported as pack assets.
+
+This affects the held item seen by other players and in F5. First-person
+display transforms and lens geometry are retained. The arm itself keeps
+Minecraft's animation; the plugin does not install a custom skeletal
+animation that points the whole arm along every head angle.
+
+No modeled fake arms or generic skin cubes are added. Native first-person
+arm visibility remains Minecraft's item-rendering behavior. Fixing the
+third-person item pose does not promise a new first-person arm.
+
+The lens center/radius/axis are generated into flashlight_pose.json and
+optics.glsl. Handed camera constants come from the same conversion. If
+you edit first-person transforms, regenerate these assets or the visible
+lens and beam origin may diverge. Do not tune one hardcoded shader offset
+while leaving the model data unchanged.
+
+
+26. TECHNICAL COMPATIBILITY BETWEEN MINECRAFT VERSIONS
+
+Changing only api-version or pack_format is insufficient. The common
+server code uses public Paper APIs, but shaders, uniform blocks, postpass
+JSON, screen geometry, and transparency change across this range.
+
+Client resource formats used by the verified profiles:
+
+  1.21.4                  46
+  1.21.5                  55
+  1.21.6                  63
+  1.21.7 and 1.21.8       64
+  1.21.9 and 1.21.10      69.0
+  1.21.11                 75.0
+  26.1, 26.1.1, 26.1.2   84.0
+  26.2                    88.0
+  26.3                    97.1
+
+1.21.5 changes postpass shader declarations and uses normalized fullscreen
+quad coordinates. A shader assuming the old pixel-space geometry would
+not generate the correct screen output merely because its JSON loads.
+
+1.21.6 introduces uniform blocks for projection, transforms, fog, and
+postpass parameters. Its fog interface changes too. Generated adaptations
+preserve the native shader declarations and add a separate marker branch.
+
+1.21.9 uses min_format/max_format metadata and a fullscreen triangle from
+the vertex index. Includes are resolved from each exact client release;
+for example, the DynamicTransforms layout changes again in 1.21.11 even
+when a shader family remains otherwise shared.
+
+26.1 separates item rendering into core/item and removes the old
+rendertype_item_entity_translucent_cull path. Its branch includes the
+native entity/item routes required for technical controls and normal
+objects. 26.2 uses its own shader/global-block revision.
+
+26.3 uses #include, explicit input/output locations, gl_VertexIndex, and
+ShaderC compilation. It also includes OIT transparency phases and the
+potential zero-to-one depth convention. Its templates preserve the native
+branches for ordinary items/entities, including applicable per-face,
+emissive, dissolve, glint, and transparency behavior.
+
+The distributed 1.21.X pack contains overlays for 1.21.5, 1.21.6, and
+1.21.9 shader families above its 1.21.4 root. PackCompatibility resolves
+the exact native profile before handing resources to a provider, flattens
+the selected resources to the root, and writes exact-version metadata.
+Unused overlay directories are removed from that export.
+
+The other three branch packs already contain their native renderer at
+the root. Common models, textures, item data, recipes, and gameplay remain
+shared. This separation keeps four user-facing downloads while avoiding
+one fragile shader interface for every Minecraft version.
+
+
+27. PERFORMANCE AND DIAGNOSING UNEVEN MOVEMENT
+
+Three clocks affect perceived smoothness:
+
+  Server TPS/MSPT: when gameplay, positions, clicks, and tasks update.
+  Network delivery: when a client receives those server changes.
+  Client FPS/GPU time: when the next image can be drawn.
+
+Local tracking addresses a specific source of steering delay: the owner's
+beam no longer has to wait for its technical display to receive another
+server rotation before following the camera. It does not reduce another
+plugin's CPU time, complete chunk generation, remove network latency, or
+make a GPU render more frames.
+
+The main mode avoids finding nearby receiver entities and editing each
+one. It uses at most two optical controls per active flashlight with local
+tracking enabled, plus eight body controls per world by default. Unchanged
+transform/metadata values are cached. Collision shapes and scans are
+reused between refreshes.
+
+The alternative mode can need thirteen displays per flashlight at default
+settings. Disabling entities.enabled should not be presented as a universal
+performance improvement. It changes both behavior and where work occurs.
+
+GPU COST
+
+The graph remains five passes. Its 27 by 160 data target is small compared
+with the full-screen targets. At 1920 by 1080, the test estimates 16,623,360
+bytes, about 15.85 MiB, of internal color/depth allocation. That is not the
+whole Minecraft process's VRAM usage.
+
+More visible lights, larger screen resolution, cone coverage, and active
+body tests increase GPU work. The body cap bounds extra segment tests.
+Decoding body data in vertices avoids repeatedly fetching the entire table
+for every pixel/light combination.
+
+The recorded full-chain GPU timings are synthetic effect timings. They
+exclude the rest of Minecraft and do not establish FPS for a production
+map. The benchmark scene does not represent the worst possible set of
+eight active body casters. Its exact values are copied into the release
+report, without treating a single run as a guaranteed improvement.
+
+STARTING SETTINGS FOR A BUSY SERVER
+
+  Keep light.entities.enabled: true.
+  Keep light.local-camera-tracking: true.
+  Keep light.follow-player-movement: true.
+  Start with light.interpolation-ticks: 2.
+  Keep collision update-interval-ticks: 2; consider 3 if profiling shows
+    collision scans are a significant cost.
+  Reduce shadows.max-casters to 4 before removing all body shadows.
+  Keep range at 20 before increasing it to 32.
+
+These choices preserve the smooth local path while bounding other work.
+They are starting points for this implementation, not measured settings
+for an unidentified production server.
+
+Setting beam-visibility to zero skips the air integration but keeps direct
+lighting and the postprocessing graph. It is primarily an appearance
+setting, not a switch that unloads every lighting shader. Disabling glare
+requires delivering the newly tuned pack to test its actual client effect.
+
+DIAGNOSIS PROCEDURE
+
+1) Test with one flashlight, the correct pack, and a native unmodified
+   rendering path. Record server MSPT/TPS and client frame time.
+2) Turn only the camera while stationary. A delayed personal beam suggests
+   local tracking/resources are not active; delayed clicks suggest server
+   or network timing.
+3) Observe another moving player. Remote jitter depends on received
+   positions and interpolation, unlike the owner's camera correction.
+4) Compare a crowded scene with few and many visible lights. A rising
+   client frame time with stable server MSPT points toward rendering cost.
+5) Use a server CPU profile to identify expensive tasks. Inspect the actual
+   FlashLight work before changing unrelated limits.
+6) Repeat on the real map with the real plugin set, then vary one setting
+   at a time so the result has an attributable cause.
+
+The development smoke servers are isolated. They do not profile the user's
+busy production installation. No claim is made that this release removes
+all lag from an arbitrary collection of plugins.
+
+
+28. LIMITS AND ACCURATE FEATURE DESCRIPTIONS
+
+The following distinctions should remain visible in published wiki pages:
+
+  Visual light versus world light.
+    The scene becomes brighter inside the beam; world block lighting and
+    mob AI are unchanged. Do not claim a new physical lighting engine.
+
+  Shared body shadows versus exact animated silhouettes.
+    Up to eight selected player bodies are ellipsoid approximations.
+    Skin animation, separate limbs, equipment, and mobs are not a global
+    off-screen shadow-caster mesh system.
+
+  Visible depth versus complete world knowledge.
+    Depth sees the current scene, not every hidden or off-screen wall.
+    Server samples and body proxies improve coverage but remain bounded.
+
+  Camera smoothness versus server health.
+    The local ray follows camera frames. Switches, charge, scripts, and
+    remote players still depend on ticks and packets.
+
+  F5 detection versus a client camera-mode API.
+    The 2.2-block proximity rule can misidentify a compressed third-person
+    camera. A resource pack cannot query every client mod's camera mode.
+
+  Texture preservation versus recovering absent detail.
+    Exposure uses the scene's existing color. Completely black input
+    cannot reveal texture details that were never present in that image.
+
+  Main renderer versus fallback.
+    The older block-surface route has different features and display
+    costs. Entity lighting, body proxies, and face glare require main mode.
+
+  Native release support versus protocol translation.
+    Four JAR families cover the explicit versions in section 2. Future
+    patches, snapshots, and translated clients need their own validation.
+
+  Pack integration versus universal third-party certification.
+    An adapter preserves compatible host stages. It cannot repair an
+    external shader written for a different native rendering interface.
+
+  Automated graphics checks versus an actual multiplayer play session.
+    Tests render real shaders and launch real servers, but synthetic
+    viewpoints do not cover every animation, network condition, mod, GPU,
+    resource pack order, or camera position in a full game session.
+
+
+29. TROUBLESHOOTING
+
+THE ITEM IS VANILLA HORSE ARMOR OR THE BEAM IS MISSING
+
+Check whether the client accepted and finished loading the pack. Confirm
+that the URL downloads a ZIP and that its hash matches. An old cached or
+hosted ZIP can leave new server controls without matching shaders. Inspect
+the client resource reload/shader log rather than checking only console
+startup. Remove competing shaderpacks for a baseline test.
+
+THE MODEL WORKS BUT THE LIGHT DOES NOT
+
+Models and core/post shaders can conflict independently. Confirm the
+correct native version and that the active pack includes entity_outline
+and the flashlight shader namespace. Verify that another pack/provider
+has not overridden only the rendering files. Check allowed world, use
+permission, charge, water state, and whether the flashlight is switched on.
+
+OTHERS CANNOT SEE MY LIGHT
+
+Check light.shared-light, the observer's loaded pack, same-world/tracking
+distance, and whether the emitter's session is still active. Reload after
+changing visibility settings and turn the item on again. An observer
+outside the server's entity tracking range cannot receive distant controls.
+
+SHADOWS ARE VISIBLE TO ONE PLAYER BUT NOT ANOTHER
+
+Confirm main mode and shadows.enabled. Check the maximum caster count and
+whether the candidate actually intersects a different player's beam. A
+vanished/invisible/spectator body is not treated as an ordinary shared
+caster. Check Player.canSee behavior of the server's visibility plugin.
+In bright natural light the missing added contribution can be subtle.
+The proxy is a body approximation, so an exact moving-arm silhouette is
+not an expected diagnostic result.
+
+POINTING AT SOMEONE DOES NOT PRODUCE GLARE
+
+The target's camera must be in the cone and within the smaller of optical
+range and glare maximum distance. The lens must lie in front of the view,
+and obstruction can suppress it. Check that strength is nonzero and that
+the target reloaded the updated tuned pack. Glare is not a server potion
+whose presence can be checked in the target's status-effect list.
+
+MY OWN BEAM LAGS WHEN I MOVE THE MOUSE
+
+Check local-camera-tracking, main mode, and the new owner-control textures.
+If follow-player-movement is false, server inertia may be intentional;
+the camera path should remain independent while enabled. F5 normally
+uses the world ray. A distant/stalled owner control or a modified camera
+can prevent the proximity rule from selecting the first-person path.
+Low client frame rate can also look like tracking lag.
+
+OTHER PLAYERS' LIGHTS LOOK TOO DELAYED
+
+Inspect server timing and network delivery. Try interpolation-ticks 1 or
+2 and compare. More interpolation hides irregular updates but introduces
+more trailing motion. It cannot predict arbitrary player actions.
+
+THE HANDLE STILL LOOKS WRONG IN A CUSTOM PLAYER POSE
+
+Verify the new pack is actually loaded. The corrected third-person item
+pose targets Minecraft's normal hands. Custom pose/animation mods,
+unusual item transforms, and other packs changing the model can alter the
+result. First test the native pose in both hands and in F5.
+
+WATER OR PARTICLES LOOK INCORRECT
+
+Check which provider owns transparency and outline stages. Do not combine
+an old transparency graph with a newer native renderer by copying files
+blindly. Ordinary light has bounded alpha coverage, and scene depth must
+remain intact. If particles draw through walls, investigate a postpass
+clearing depth or an overriding shader rather than raising brightness.
+
+CONFIGURATION CHANGES APPEAR TO DO NOTHING
+
+Use /flashlight reload, then turn the light on again. The reload deliberately
+stops active sessions. Check numeric bounds and whether the setting only
+affects fallback mode. Glare tuning needs new client resources. A different
+server instance or stale hosted ZIP can also make a correct edit invisible.
+
+THE PLUGIN REFUSES TO START ON A VERSION
+
+Read the console's supported-version message. Use the branch JAR that
+matches the native server. Check the JVM version. Do not work around a
+genuine renderer mismatch by editing api-version and pack metadata alone.
+
+THE SERVER REPORTS TRP/NEXO/STROBE INTEGRATION FAILURE
+
+Determine the active provider before changing URLs. Confirm the external
+plugin is enabled and supports this exact Minecraft renderer. The log
+distinguishes failed overlay registration, missing matching resources,
+and unavailable delivery. A preserved native export does not prove the
+combined provider succeeded. Avoid repeatedly delivering competing packs
+as a substitute for fixing their shader composition.
+
+
+30. SOURCE CODE MAP
+
+src/main/java/es/mrdino/flashlight/
+
+  FlashlightPlugin
+    Startup/shutdown, settings replacement, recipes, and registration.
+
+  ServerCompatibility
+    Reads embedded branch/version metadata and checks the native server.
+
+  FlashlightSettings / ConfigUpdater
+    Validated runtime settings and non-destructive YAML key migration.
+
+  FlashlightItems
+    Item identity, charge, lore, visual models, and item components.
+
+  FlashlightState
+    Charge/fault phase state and scheduling.
+
+  FlashlightService / FlashlightListener
+    Active sessions, per-tick updates, interactions, and lifecycle cleanup.
+
+  FlashlightCommand / FlashlightCommandTree / CommandDuration
+    Command execution, native Paper tree/selectors, parsing, and timers.
+
+light/
+
+  BeamRenderer
+    Optical following, collision-cache use, main/fallback coordination.
+
+  EntityIllumination
+    Shared and owner-private optical controls, slots, compact metadata.
+
+  PlayerShadows
+    Bounded body selection, visibility, transforms, and cleanup.
+
+  HeldItemPose / BeamOptics / BeamMetadata
+    Generated pose handling and optical/legacy parameter encoding.
+
+  SurfaceSampler / BeamSampler
+    Cone samples, collision shapes, face discovery, and caching.
+
+  SurfacePatch / SurfaceProjection / SurfaceAssignments
+    Face geometry, analytic cone sections, and stable fallback display reuse.
+
+  LightEngine / LightLedger / BlockKey
+    Legacy temporary-light recovery and ownership helpers. The current
+    main renderer does not start placing LIGHT blocks through them.
+
+math/
+
+  Vec3 / VoxelRay
+    Vector operations and finite voxel traversal.
+
+pack/
+
+  PackService
+    Export, provider selection, requests, and optional HTTP hosting.
+
+  PackCompatibility / PackTuning
+    Native profile resolution and glare sprite customization.
+
+  NexoPackBridge / NexoPackInstaller
+    Nexo handoff, managed registration, backups, and rebuild coordination.
+
+  TrpPackBridge / StrobePackSupport / ShaderComposer
+    Compatible host overlay registration and shader composition.
+
+resource-pack/
+  Shared items, models, textures, base 1.21.4 shaders, and generated optics.
+
+resource-pack-compat/
+  Generated native renderer profiles for later versions.
+
+src/test/
+  Behavioral tests, real graphics regressions, provider fixtures, and
+  exact-version native includes/post resources used for compilation.
+
+src/smoke/
+  Separate native Paper probe; excluded from the release plugin.
+
+
+31. BUILDING, ASSET GENERATION, AND TESTING
+
+NORMAL BUILD
+
+Use a Java 21 JDK for Gradle. On this Windows development machine a full
+command can select it explicitly:
+
+  $env:JAVA_HOME='C:\Users\bicho\.jdks\temurin-21.0.12.1'
+  .\gradlew.bat build smokeProbe --console=plain
+  python tools/validate_pack.py
+
+Use your own JDK path on another machine. Gradle builds four JARs and four
+packs, runs the JUnit suite, and builds the separate probe when requested.
+The ordinary build uses committed generated resources; it does not need
+to download every Minecraft client first.
+
+Key output locations:
+
+  build/libs/                       four branch JARs
+  build/distributions/              four branch resource packs
+  build/reports/tests/test/         browsable test report
+  build/test-results/test/          JUnit XML results
+  build/paper-smoke/plugins/        separate smoke probe JAR
+  build/compat-smoke/<version>/     isolated Paper worlds/logs/results
+  build/releases/                   complete release ZIP and checksums
+
+The GPU tests currently include Windows LWJGL native dependencies. Running
+the same suite on another OS requires the corresponding native libraries
+and a working OpenGL context. A displayless environment may require its
+own graphics setup; an assumed/skipped graphics test is not equivalent to
+the successful rendered checks recorded for this release.
+
+NATIVE PAPER MATRIX
+
+  python tools/run_compat_smoke.py --eula 'path/to/accepted/eula.txt'
+
+The script requires an existing eula=true file. It does not make an EULA
+decision on behalf of a new operator. It downloads published Paper artifacts
+with SHA-256 verification, chooses Java 21/25, and launches isolated servers
+under build/compat-smoke. The supplied default Java paths can be overridden
+with --java21 and --java25. --versions selects a subset; the full release
+gate expects the complete supported published Paper matrix.
+
+Servers bind to loopback with isolated ports and up to two concurrent
+workers. The runner does not replace a production server JAR or touch its
+worlds. Results include the SHA-256 of the tested FlashLight JAR so packaging
+can reject a report produced for different plugin bytes.
+
+The probe exercises real Bukkit display/item APIs and a simulated player
+viewpoint. It checks native startup, commands, reload, stable faces,
+invisible administrative blocks, foreground/background geometry, grazing
+floor sections, bounded displays, next-tick turning, dimming, blackout,
+shared/private controls, eight body controls, cleanup, unchanged entity
+metadata/block light, and one exported pack.
+
+This is a real server process with synthetic observers, not a pair of
+connected Minecraft clients. Keep that distinction in test descriptions.
+
+ASSET REGENERATION
+
+tools/generate_pack.py
+  Regenerates common pack models/textures and associated generated assets.
+
+tools/import_bbmodel.py
+  Imports the supplied model into the legal Java model representation.
+
+tools/generate_held_pose.py
+  Derives lens and handed camera constants from the converted model.
+
+tools/generate_spotlight_assets.py
+  Produces technical controls and the scene-based postprocessing graph.
+
+tools/fetch_compat_assets.py
+  Downloads official client resources with manifest SHA-1 verification
+  into build/minecraft-assets for renderer adaptation/review.
+
+tools/generate_compat_assets.py
+  Generates the later native shader profiles from those client resources
+  while retaining ordinary native rendering branches.
+
+tools/preview_model.py
+  Produces the technical model preview in docs/model-preview.png.
+
+tools/preview_third_person.py
+  Renders a before/after comparison of the actual model in the native hand
+  frame, including fist reference bounds and left/right mirroring. This
+  is a technical render, not a screenshot from a running Minecraft client.
+
+Python asset tools use Pillow and/or NumPy where applicable. After changing
+base shaders, pose constants, or metadata layouts, regenerate dependent
+compatibility profiles and rebuild. Do not edit only one generated branch
+and assume the other three JAR families inherit it automatically.
+
+RENDERING VERIFICATION
+
+VersionedPackTest resolves all thirteen published client profiles against
+their native includes and JSON schemas. It links relevant core variants
+and the five postpasses. Its native projection checks draw actual output,
+including uniform block layouts, cone/off/dim behavior, and preserved depth.
+
+For 26.3, ShaderC additionally compiles native variants to SPIR-V with the
+relevant transparency phases and depth definitions. A zero-to-one OpenGL
+projection regression exercises the alternative depth math. These checks
+do not claim an entire interactive Vulkan client play session.
+
+SpotlightGpuTest renders the actual effect, including all light transport
+slots, real texture receivers, ordinary outlines, air visibility, water/
+transparency behavior, shadows, camera tracking, and face glare. Shadow
+checks include a blocker absent from scene depth and a receiver that must
+remain lit in front of its body proxy. Glare checks compare distance,
+angle, disabling, and obstruction. Local tests cover both hands and the
+distant-camera world-ray behavior.
+
+MultiplayerControlsTest checks owner-private visibility, shared controls,
+hand changes, shadow caps, observer visibility, disabling, and teardown.
+Other tests cover commands, timers, permissions, item transfers, batteries,
+configuration preservation, providers, and geometric grip placement.
+
+The generated diagnostic PNGs under build are technical shader outputs,
+not screenshots from a complete Minecraft session. Identify them honestly
+if using them in development notes.
+
+PACKAGING
+
+  python tools/package_release.py
+
+Packaging verifies successful non-skipped test results and the complete
+native report against the current JAR hashes. It writes the English
+verification document, adds exact results to this wiki, and creates the
+complete ZIP with an integrity manifest. The smoke probe, cached Minecraft
+clients, Paper servers, old plugin versions, and development worlds are
+not release contents.
+
+
+32. SUGGESTED WIKI STRUCTURE AND READY-TO-USE DESCRIPTIONS
+
+SHORT DESCRIPTION
+
+FlashLight adds directional, battery powered flashlights to Paper servers,
+with textured surface lighting, shared player shadows, face glare, and
+scripted electrical faults through a standard resource pack.
+
+LONGER OVERVIEW
+
+Designed for exploration and horror maps, FlashLight turns a custom held
+item into a controllable light source. Its beam follows the lens, lights
+walls and moving entities, and is visible to nearby players. Replacement
+cells, configurable battery life, random faults, and timed commands make
+it suitable for ordinary survival play or scripted scenes. A standard
+server resource pack supplies the model and renderer; no separate client
+mod or shaderpack is required. Shared shadows approximate player bodies
+and preserve the world's natural light.
+
+SUGGESTED WIKI PAGES
+
+  Overview: section 1 and the descriptions above.
+  Downloads and requirements: section 2.
+  Installation and updating: sections 3–4.
+  Player guide and recipes: sections 5–7.
+  Commands and permissions: sections 8–9.
+  Configuration reference: sections 10–18.
+  Multiplayer and effects: sections 12–15.
+  Resource pack providers: sections 17–18.
+  Architecture and rendering: sections 19–26.
+  Performance and troubleshooting: sections 27–29.
+  Developer guide: sections 30–31.
+  Compatibility and verification: sections 2, 26, and 34.
+
+Keep one source of truth for the full configuration table. Link specialized
+pages to it instead of copying numeric defaults into several pages that
+can drift apart. When a release changes settings, update the config
+reference, user-facing examples, version table, and verification report
+together.
+
+For screenshots, capture at least: first person in each hand, normal
+third-person/F5 grip, a textured wall and mob, two players sharing a shadow,
+near/far glare, and an off/dim state. Record the native client version and
+pack version. Do not caption a synthetic OpenGL output as an in-game photo.
+
+Useful acceptance steps for a server owner:
+
+1) Confirm the exact JAR branch and current pack.
+2) Give one flashlight and test both hands and F5.
+3) Use a second connected player to observe beam and body shadows.
+4) Approach the receiving camera along and beside the beam axis.
+5) Compare clear line of sight with a wall blocking the source.
+6) Try a scripted dim fault and a complete blackout.
+7) Replace a cell and verify persistence after putting the item away.
+8) Repeat with the production plugin set while recording server/client
+   timing, rather than inferring performance from an empty test world.
+
+
+33. PRIMARY REFERENCES
+
+The implementation and generated release artifacts are the primary source
+for FlashLight-specific behavior. The following official resources were
+used to verify native versions and rendering changes for this edition:
+
+Paper installation and Java requirements:
+  https://docs.papermc.io/paper/getting-started/
+
+Paper plugin metadata and api-version:
+  https://docs.papermc.io/paper/dev/plugin-yml/
+
+Published Paper builds and verified artifact metadata:
+  https://fill.papermc.io/v3/projects/paper
+
+Mojang version manifest and linked client artifact hashes:
+  https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
+
+Minecraft 25w31a resource/shader changes:
+  https://www.minecraft.net/en-us/article/minecraft-snapshot-25w31a
+
+Minecraft Java 26.1 release:
+  https://www.minecraft.net/en-us/article/minecraft-java-edition-26-1
+
+Minecraft Java 26.2 release:
+  https://www.minecraft.net/en-us/article/minecraft-java-edition-26-2
+
+Minecraft Java 26.3 release:
+  https://www.minecraft.net/en-us/article/minecraft-java-edition-26-3
+
+Nexo MultiPack integration reference:
+  https://docs.nexomc.com/configuration/resourcepack/multipack-feature
+
+Exact-version rendering fixtures record their source client URL and SHA-1
+in src/test/resources/compat/versions/<version>/source.txt. They are test
+inputs, not additional packs a player must install. Native server build
+numbers and final plugin hashes are recorded separately below.
+
+
+34. VERIFICATION OF THIS RELEASE
+
+The following block is generated from the final build and native probe
+results by tools/package_release.py. See the companion verification report
+for artifact SHA-256 values and the full distinction between automated
+checks and live client testing.
+
+BEGIN GENERATED VERIFICATION
+Release: FlashLight 1.8.1
+Packaged: 2026-10-25 12:08:30 UTC
+Automated tests: 110 passed; 0 failures; 0 errors; 0 skipped.
+Pack validation: 1,181 base models; valid JSON/UVs/textures; embedded packs match distributed ZIPs.
+Rendering profiles checked: 13 native Minecraft client releases.
+Native Paper probes: 12 passed; each report matches the final distributed JAR SHA-256.
+
+Native Minecraft / Paper build / result / server Java:
+  1.21.4    build 232  PASS  Java 21
+  1.21.5    build 114  PASS  Java 21
+  1.21.6    build  48  PASS  Java 21
+  1.21.7    build  32  PASS  Java 21
+  1.21.8    build  60  PASS  Java 21
+  1.21.9    build  59  PASS  Java 21
+  1.21.10   build 130  PASS  Java 21
+  1.21.11   build 132  PASS  Java 21
+  26.1.1    build  29  PASS  Java 25
+  26.1.2    build  74  PASS  Java 25
+  26.2      build 134  PASS  Java 25
+  26.3      build 222  PASS  Java 25
+
+Plain Paper 26.1 was not available in the retrieved published server list.
+The 26.1 client renderer is checked; native server probes cover 26.1.1 and 26.1.2.
+END GENERATED VERIFICATION

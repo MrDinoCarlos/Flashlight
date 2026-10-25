@@ -1,0 +1,5 @@
+name: FlashLightSmokeProbe
+version: '1'
+main: es.mrdino.flashlight.smoke.PaperSmokeProbe
+api-version: '1.21.4'
+depend: [FlashLight]

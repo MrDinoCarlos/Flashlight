@@ -1,0 +1,1 @@
+{"ambientocclusion":false,"textures":{"marker":"flashlight:item/beam/surface_h_8_8","particle":"flashlight:item/beam/surface_h_8_8"},"elements":[{"from":[0,0,8],"to":[16,16,8],"shade":false,"faces":{"south":{"uv":[0.5,0.5,15.5,15.5],"texture":"#marker","tintindex":0},"north":{"uv":[15.5,0.5,0.5,15.5],"texture":"#marker","tintindex":0}}}]}

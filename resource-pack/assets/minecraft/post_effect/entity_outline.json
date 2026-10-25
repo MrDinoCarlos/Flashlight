@@ -1,0 +1,94 @@
+{
+  "targets": {
+    "swap": {},
+    "flashlight_data": {
+      "width": 27,
+      "height": 160
+    }
+  },
+  "passes": [
+    {
+      "program": "flashlight:post/control_copy",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:entity_outline"
+        }
+      ],
+      "output": "flashlight_data"
+    },
+    {
+      "program": "flashlight:post/outline",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:entity_outline"
+        }
+      ],
+      "output": "swap"
+    },
+    {
+      "program": "minecraft:post/entity_outline_box_blur",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "swap",
+          "bilinear": true
+        }
+      ],
+      "output": "minecraft:entity_outline",
+      "uniforms": [
+        {
+          "name": "BlurDir",
+          "values": [
+            1,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "program": "minecraft:post/entity_outline_box_blur",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:entity_outline",
+          "bilinear": true
+        }
+      ],
+      "output": "swap",
+      "uniforms": [
+        {
+          "name": "BlurDir",
+          "values": [
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "program": "flashlight:post/spotlight",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:main"
+        },
+        {
+          "sampler_name": "Depth",
+          "target": "minecraft:main",
+          "use_depth_buffer": true
+        },
+        {
+          "sampler_name": "Data",
+          "target": "flashlight_data"
+        },
+        {
+          "sampler_name": "Outline",
+          "target": "swap"
+        }
+      ],
+      "output": "minecraft:entity_outline"
+    }
+  ]
+}

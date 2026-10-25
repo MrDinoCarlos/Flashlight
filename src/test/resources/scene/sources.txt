@@ -1,0 +1,5 @@
+Original Minecraft Java 1.21.4 client texture fixtures. Test inputs only, not bundled in the distributed plugin/resource pack.
+spotlight-1.7.0.fsh pins the accepted FlashLight 1.7.0 RGB result for the depth-preserving compositor regression.
+../gpu/minecraft/blit_screen.{vsh,fsh} and particle.{vsh,fsh} come from the installed official Minecraft Java 1.21.4 client. Test-only fixtures for native final blending and particle depth testing.
+water_still.png, water_flow.png and ../gpu/minecraft/terrain.{vsh,fsh}, post_*.{json,vsh,fsh} are original Minecraft Java 1.21.4 test-only fixtures for Fancy/Fabulous water and complete native post-chain timing. None are shipped in the plugin or resource pack.
+clean-control-1.7.1.fsh pins the original private-data cleanup for comparison with the merged native outline detector.

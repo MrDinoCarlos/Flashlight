@@ -1,0 +1,22 @@
+name: FlashLight
+version: '${version}'
+main: es.mrdino.flashlight.FlashlightPlugin
+api-version: '${apiVersion}'
+softdepend: [Nexo, TRPServerEdition, StrobeLights]
+description: Directional flashlights with shared player shadows, face glare, batteries and scripted flicker in one resource pack.
+author: MrDino
+commands:
+  flashlight:
+    description: Get and manage flashlights.
+    aliases: [fl]
+    usage: /flashlight [give|battery|recharge|on|off|flicker|pack|reload|help]
+permissions:
+  flashlight.use:
+    description: Use flashlights and replace their batteries.
+    default: true
+  flashlight.admin:
+    description: Give items, recharge, force faults and reload the configuration.
+    default: op
+  flashlight.pack:
+    description: Request or export the flashlight resource pack.
+    default: true
