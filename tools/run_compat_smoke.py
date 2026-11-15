@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import urllib.request
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSIONS = [f"1.21.{n}" for n in range(4, 12)] + ["26.1.1", "26.1.2", "26.2", "26.3"]
@@ -45,6 +46,13 @@ def run(version, index, args, plugin_version):
     plugins.mkdir(parents=True, exist_ok=True)
     branch = "1.21.X" if version.startswith("1.21.") else ".".join(version.split(".")[:2]) + ".X"
     shutil.copyfile(ROOT / f"build/libs/FlashLight-{plugin_version}-{branch}.jar", plugins / "FlashLight.jar")
+    # Each isolated server needs a distinct HTTP listener as well as a game port.
+    with zipfile.ZipFile(plugins / "FlashLight.jar") as bundled:
+        config = bundled.read("config.yml").decode("utf-8")
+    data = plugins / "FlashLight"
+    data.mkdir(exist_ok=True)
+    (data / "config.yml").write_text(config.replace("    port: 8192", f"    port: {25720+index}")
+                                   .replace("    bind: '0.0.0.0'", "    bind: '127.0.0.1'"), encoding="utf-8")
     shutil.copyfile(ROOT / "build/paper-smoke/plugins/FlashLight-SmokeProbe.jar", plugins / "FlashLight-SmokeProbe.jar")
     shutil.copyfile(args.eula, directory / "eula.txt")
     (directory / "result.txt").write_text("RUNNING\n")

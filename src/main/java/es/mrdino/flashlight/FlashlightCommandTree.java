@@ -34,7 +34,9 @@ public final class FlashlightCommandTree {
                 .executes(context -> run(context, "reload")));
         root.then(Commands.literal("pack").requires(source -> source.getSender().hasPermission("flashlight.pack"))
                 .executes(context -> run(context, "pack"))
-                .then(Commands.literal("export").executes(context -> run(context, "pack", "export"))));
+                .then(Commands.literal("export").executes(context -> run(context, "pack", "export")))
+                .then(Commands.literal("compatible").executes(context -> executor.execute(context.getSource().getSender(),new String[]{"pack","compatible"},null)))
+                .then(Commands.literal("fast").executes(context -> executor.execute(context.getSource().getSender(),new String[]{"pack","fast"},null))));
         for (String sub : List.of("give", "battery", "recharge", "on", "off", "flicker")) {
             LiteralArgumentBuilder<CommandSourceStack> branch = Commands.literal(sub)
                     .requires(source -> source.getSender().hasPermission("flashlight.admin"))

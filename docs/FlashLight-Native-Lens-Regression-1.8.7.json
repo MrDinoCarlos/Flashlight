@@ -1,0 +1,1676 @@
+{
+  "release": "1.8.7",
+  "date": "2026-11-15",
+  "hardware": "NVIDIA RTX 3060, NVIDIA 617.42",
+  "backend": "OpenGL",
+  "resolution": [
+    1376,
+    776
+  ],
+  "configuration": {
+    "gamma": 0.0,
+    "random_faults": false,
+    "breathing": 0.003,
+    "daylight_cycle": false
+  },
+  "region": {
+    "x": 700,
+    "y": 350,
+    "width": 30,
+    "height": 30,
+    "origin": "top-left"
+  },
+  "before": {
+    "monitor_samples": 69,
+    "absent": 25,
+    "trace": [
+      {
+        "tick": 245,
+        "controls": 0
+      },
+      {
+        "tick": 250,
+        "controls": 0
+      },
+      {
+        "tick": 255,
+        "controls": 2
+      },
+      {
+        "tick": 260,
+        "controls": 2
+      },
+      {
+        "tick": 265,
+        "controls": 2
+      },
+      {
+        "tick": 270,
+        "controls": 2
+      },
+      {
+        "tick": 275,
+        "controls": 2
+      },
+      {
+        "tick": 280,
+        "controls": 2
+      },
+      {
+        "tick": 285,
+        "controls": 2
+      },
+      {
+        "tick": 290,
+        "controls": 2
+      },
+      {
+        "tick": 295,
+        "controls": 2
+      },
+      {
+        "tick": 300,
+        "controls": 2
+      },
+      {
+        "tick": 305,
+        "controls": 2
+      },
+      {
+        "tick": 310,
+        "controls": 2
+      },
+      {
+        "tick": 315,
+        "controls": 0
+      },
+      {
+        "tick": 320,
+        "controls": 0
+      },
+      {
+        "tick": 325,
+        "controls": 0
+      },
+      {
+        "tick": 330,
+        "controls": 0
+      },
+      {
+        "tick": 335,
+        "controls": 0
+      },
+      {
+        "tick": 340,
+        "controls": 0
+      },
+      {
+        "tick": 345,
+        "controls": 2
+      },
+      {
+        "tick": 350,
+        "controls": 2
+      },
+      {
+        "tick": 355,
+        "controls": 2
+      },
+      {
+        "tick": 360,
+        "controls": 2
+      },
+      {
+        "tick": 365,
+        "controls": 2
+      },
+      {
+        "tick": 370,
+        "controls": 2
+      },
+      {
+        "tick": 375,
+        "controls": 2
+      },
+      {
+        "tick": 380,
+        "controls": 2
+      },
+      {
+        "tick": 385,
+        "controls": 2
+      },
+      {
+        "tick": 390,
+        "controls": 2
+      },
+      {
+        "tick": 395,
+        "controls": 0
+      },
+      {
+        "tick": 400,
+        "controls": 0
+      },
+      {
+        "tick": 405,
+        "controls": 0
+      },
+      {
+        "tick": 410,
+        "controls": 0
+      },
+      {
+        "tick": 415,
+        "controls": 0
+      },
+      {
+        "tick": 420,
+        "controls": 0
+      },
+      {
+        "tick": 425,
+        "controls": 2
+      },
+      {
+        "tick": 430,
+        "controls": 2
+      },
+      {
+        "tick": 435,
+        "controls": 2
+      },
+      {
+        "tick": 440,
+        "controls": 2
+      },
+      {
+        "tick": 445,
+        "controls": 2
+      },
+      {
+        "tick": 450,
+        "controls": 2
+      },
+      {
+        "tick": 455,
+        "controls": 2
+      },
+      {
+        "tick": 460,
+        "controls": 2
+      },
+      {
+        "tick": 465,
+        "controls": 2
+      },
+      {
+        "tick": 470,
+        "controls": 2
+      },
+      {
+        "tick": 475,
+        "controls": 2
+      },
+      {
+        "tick": 480,
+        "controls": 2
+      },
+      {
+        "tick": 485,
+        "controls": 0
+      },
+      {
+        "tick": 490,
+        "controls": 0
+      },
+      {
+        "tick": 495,
+        "controls": 0
+      },
+      {
+        "tick": 500,
+        "controls": 0
+      },
+      {
+        "tick": 505,
+        "controls": 0
+      },
+      {
+        "tick": 510,
+        "controls": 0
+      },
+      {
+        "tick": 515,
+        "controls": 2
+      },
+      {
+        "tick": 520,
+        "controls": 2
+      },
+      {
+        "tick": 525,
+        "controls": 2
+      },
+      {
+        "tick": 530,
+        "controls": 2
+      },
+      {
+        "tick": 535,
+        "controls": 2
+      },
+      {
+        "tick": 540,
+        "controls": 2
+      },
+      {
+        "tick": 545,
+        "controls": 2
+      },
+      {
+        "tick": 550,
+        "controls": 2
+      },
+      {
+        "tick": 555,
+        "controls": 2
+      },
+      {
+        "tick": 560,
+        "controls": 2
+      },
+      {
+        "tick": 565,
+        "controls": 0
+      },
+      {
+        "tick": 570,
+        "controls": 0
+      },
+      {
+        "tick": 575,
+        "controls": 0
+      },
+      {
+        "tick": 580,
+        "controls": 0
+      },
+      {
+        "tick": 585,
+        "controls": 0
+      }
+    ],
+    "image_patch_means": [
+      {
+        "sample": 0,
+        "mean_rgb": [
+          32.5556,
+          32.4878,
+          55.5867
+        ]
+      },
+      {
+        "sample": 10,
+        "mean_rgb": [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      },
+      {
+        "sample": 20,
+        "mean_rgb": [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      },
+      {
+        "sample": 30,
+        "mean_rgb": [
+          32.5556,
+          32.4878,
+          55.5867
+        ]
+      },
+      {
+        "sample": 40,
+        "mean_rgb": [
+          32.5556,
+          32.4878,
+          55.5867
+        ]
+      },
+      {
+        "sample": 50,
+        "mean_rgb": [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      },
+      {
+        "sample": 60,
+        "mean_rgb": [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      },
+      {
+        "sample": 70,
+        "mean_rgb": [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      },
+      {
+        "sample": 80,
+        "mean_rgb": [
+          32.5556,
+          32.4878,
+          55.5867
+        ]
+      },
+      {
+        "sample": 90,
+        "mean_rgb": [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      },
+      {
+        "sample": 100,
+        "mean_rgb": [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      },
+      {
+        "sample": 110,
+        "mean_rgb": [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "client": "Minecraft 26.3 vanilla",
+      "renderer": "FAST",
+      "live_samples": 69,
+      "missing_controls": 0,
+      "image_samples": 12,
+      "patch_channel_range": 0,
+      "passed": true,
+      "control_trace": [
+        {
+          "tick": 224,
+          "controls": 2
+        },
+        {
+          "tick": 229,
+          "controls": 2
+        },
+        {
+          "tick": 234,
+          "controls": 2
+        },
+        {
+          "tick": 239,
+          "controls": 2
+        },
+        {
+          "tick": 244,
+          "controls": 2
+        },
+        {
+          "tick": 249,
+          "controls": 2
+        },
+        {
+          "tick": 254,
+          "controls": 2
+        },
+        {
+          "tick": 259,
+          "controls": 2
+        },
+        {
+          "tick": 264,
+          "controls": 2
+        },
+        {
+          "tick": 269,
+          "controls": 2
+        },
+        {
+          "tick": 274,
+          "controls": 2
+        },
+        {
+          "tick": 279,
+          "controls": 2
+        },
+        {
+          "tick": 284,
+          "controls": 2
+        },
+        {
+          "tick": 289,
+          "controls": 2
+        },
+        {
+          "tick": 294,
+          "controls": 2
+        },
+        {
+          "tick": 299,
+          "controls": 2
+        },
+        {
+          "tick": 304,
+          "controls": 2
+        },
+        {
+          "tick": 309,
+          "controls": 2
+        },
+        {
+          "tick": 314,
+          "controls": 2
+        },
+        {
+          "tick": 319,
+          "controls": 2
+        },
+        {
+          "tick": 324,
+          "controls": 2
+        },
+        {
+          "tick": 329,
+          "controls": 2
+        },
+        {
+          "tick": 334,
+          "controls": 2
+        },
+        {
+          "tick": 339,
+          "controls": 2
+        },
+        {
+          "tick": 344,
+          "controls": 2
+        },
+        {
+          "tick": 349,
+          "controls": 2
+        },
+        {
+          "tick": 354,
+          "controls": 2
+        },
+        {
+          "tick": 359,
+          "controls": 2
+        },
+        {
+          "tick": 364,
+          "controls": 2
+        },
+        {
+          "tick": 369,
+          "controls": 2
+        },
+        {
+          "tick": 374,
+          "controls": 2
+        },
+        {
+          "tick": 379,
+          "controls": 2
+        },
+        {
+          "tick": 384,
+          "controls": 2
+        },
+        {
+          "tick": 389,
+          "controls": 2
+        },
+        {
+          "tick": 394,
+          "controls": 2
+        },
+        {
+          "tick": 399,
+          "controls": 2
+        },
+        {
+          "tick": 404,
+          "controls": 2
+        },
+        {
+          "tick": 409,
+          "controls": 2
+        },
+        {
+          "tick": 414,
+          "controls": 2
+        },
+        {
+          "tick": 419,
+          "controls": 2
+        },
+        {
+          "tick": 424,
+          "controls": 2
+        },
+        {
+          "tick": 429,
+          "controls": 2
+        },
+        {
+          "tick": 434,
+          "controls": 2
+        },
+        {
+          "tick": 439,
+          "controls": 2
+        },
+        {
+          "tick": 444,
+          "controls": 2
+        },
+        {
+          "tick": 449,
+          "controls": 2
+        },
+        {
+          "tick": 454,
+          "controls": 2
+        },
+        {
+          "tick": 459,
+          "controls": 2
+        },
+        {
+          "tick": 464,
+          "controls": 2
+        },
+        {
+          "tick": 469,
+          "controls": 2
+        },
+        {
+          "tick": 474,
+          "controls": 2
+        },
+        {
+          "tick": 479,
+          "controls": 2
+        },
+        {
+          "tick": 484,
+          "controls": 2
+        },
+        {
+          "tick": 489,
+          "controls": 2
+        },
+        {
+          "tick": 494,
+          "controls": 2
+        },
+        {
+          "tick": 499,
+          "controls": 2
+        },
+        {
+          "tick": 504,
+          "controls": 2
+        },
+        {
+          "tick": 509,
+          "controls": 2
+        },
+        {
+          "tick": 514,
+          "controls": 2
+        },
+        {
+          "tick": 519,
+          "controls": 2
+        },
+        {
+          "tick": 524,
+          "controls": 2
+        },
+        {
+          "tick": 529,
+          "controls": 2
+        },
+        {
+          "tick": 534,
+          "controls": 2
+        },
+        {
+          "tick": 539,
+          "controls": 2
+        },
+        {
+          "tick": 544,
+          "controls": 2
+        },
+        {
+          "tick": 549,
+          "controls": 2
+        },
+        {
+          "tick": 554,
+          "controls": 2
+        },
+        {
+          "tick": 559,
+          "controls": 2
+        },
+        {
+          "tick": 564,
+          "controls": 2
+        }
+      ],
+      "patch_mean_rgb": [
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      ]
+    },
+    {
+      "client": "Minecraft 26.3 vanilla",
+      "renderer": "COMPATIBLE",
+      "live_samples": 69,
+      "missing_controls": 0,
+      "image_samples": 12,
+      "patch_channel_range": 0,
+      "passed": true,
+      "control_trace": [
+        {
+          "tick": 230,
+          "controls": 2
+        },
+        {
+          "tick": 235,
+          "controls": 2
+        },
+        {
+          "tick": 240,
+          "controls": 2
+        },
+        {
+          "tick": 245,
+          "controls": 2
+        },
+        {
+          "tick": 250,
+          "controls": 2
+        },
+        {
+          "tick": 255,
+          "controls": 2
+        },
+        {
+          "tick": 260,
+          "controls": 2
+        },
+        {
+          "tick": 265,
+          "controls": 2
+        },
+        {
+          "tick": 270,
+          "controls": 2
+        },
+        {
+          "tick": 275,
+          "controls": 2
+        },
+        {
+          "tick": 280,
+          "controls": 2
+        },
+        {
+          "tick": 285,
+          "controls": 2
+        },
+        {
+          "tick": 290,
+          "controls": 2
+        },
+        {
+          "tick": 295,
+          "controls": 2
+        },
+        {
+          "tick": 300,
+          "controls": 2
+        },
+        {
+          "tick": 305,
+          "controls": 2
+        },
+        {
+          "tick": 310,
+          "controls": 2
+        },
+        {
+          "tick": 315,
+          "controls": 2
+        },
+        {
+          "tick": 320,
+          "controls": 2
+        },
+        {
+          "tick": 325,
+          "controls": 2
+        },
+        {
+          "tick": 330,
+          "controls": 2
+        },
+        {
+          "tick": 335,
+          "controls": 2
+        },
+        {
+          "tick": 340,
+          "controls": 2
+        },
+        {
+          "tick": 345,
+          "controls": 2
+        },
+        {
+          "tick": 350,
+          "controls": 2
+        },
+        {
+          "tick": 355,
+          "controls": 2
+        },
+        {
+          "tick": 360,
+          "controls": 2
+        },
+        {
+          "tick": 365,
+          "controls": 2
+        },
+        {
+          "tick": 370,
+          "controls": 2
+        },
+        {
+          "tick": 375,
+          "controls": 2
+        },
+        {
+          "tick": 380,
+          "controls": 2
+        },
+        {
+          "tick": 385,
+          "controls": 2
+        },
+        {
+          "tick": 390,
+          "controls": 2
+        },
+        {
+          "tick": 395,
+          "controls": 2
+        },
+        {
+          "tick": 400,
+          "controls": 2
+        },
+        {
+          "tick": 405,
+          "controls": 2
+        },
+        {
+          "tick": 410,
+          "controls": 2
+        },
+        {
+          "tick": 415,
+          "controls": 2
+        },
+        {
+          "tick": 420,
+          "controls": 2
+        },
+        {
+          "tick": 425,
+          "controls": 2
+        },
+        {
+          "tick": 430,
+          "controls": 2
+        },
+        {
+          "tick": 435,
+          "controls": 2
+        },
+        {
+          "tick": 440,
+          "controls": 2
+        },
+        {
+          "tick": 445,
+          "controls": 2
+        },
+        {
+          "tick": 450,
+          "controls": 2
+        },
+        {
+          "tick": 455,
+          "controls": 2
+        },
+        {
+          "tick": 460,
+          "controls": 2
+        },
+        {
+          "tick": 465,
+          "controls": 2
+        },
+        {
+          "tick": 470,
+          "controls": 2
+        },
+        {
+          "tick": 475,
+          "controls": 2
+        },
+        {
+          "tick": 480,
+          "controls": 2
+        },
+        {
+          "tick": 485,
+          "controls": 2
+        },
+        {
+          "tick": 490,
+          "controls": 2
+        },
+        {
+          "tick": 495,
+          "controls": 2
+        },
+        {
+          "tick": 500,
+          "controls": 2
+        },
+        {
+          "tick": 505,
+          "controls": 2
+        },
+        {
+          "tick": 510,
+          "controls": 2
+        },
+        {
+          "tick": 515,
+          "controls": 2
+        },
+        {
+          "tick": 520,
+          "controls": 2
+        },
+        {
+          "tick": 525,
+          "controls": 2
+        },
+        {
+          "tick": 530,
+          "controls": 2
+        },
+        {
+          "tick": 535,
+          "controls": 2
+        },
+        {
+          "tick": 540,
+          "controls": 2
+        },
+        {
+          "tick": 545,
+          "controls": 2
+        },
+        {
+          "tick": 550,
+          "controls": 2
+        },
+        {
+          "tick": 555,
+          "controls": 2
+        },
+        {
+          "tick": 560,
+          "controls": 2
+        },
+        {
+          "tick": 565,
+          "controls": 2
+        },
+        {
+          "tick": 570,
+          "controls": 2
+        }
+      ],
+      "patch_mean_rgb": [
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ],
+        [
+          79.7344,
+          79.3844,
+          133.6867
+        ]
+      ]
+    },
+    {
+      "client": "Minecraft 1.21.4 + OptiFine HD U J3 (Shaders OFF)",
+      "renderer": "FAST",
+      "live_samples": 56,
+      "missing_controls": 0,
+      "image_samples": 8,
+      "patch_channel_range": 0,
+      "passed": true,
+      "control_trace": [
+        {
+          "tick": 422,
+          "controls": 2
+        },
+        {
+          "tick": 427,
+          "controls": 2
+        },
+        {
+          "tick": 432,
+          "controls": 2
+        },
+        {
+          "tick": 437,
+          "controls": 2
+        },
+        {
+          "tick": 442,
+          "controls": 2
+        },
+        {
+          "tick": 447,
+          "controls": 2
+        },
+        {
+          "tick": 452,
+          "controls": 2
+        },
+        {
+          "tick": 457,
+          "controls": 2
+        },
+        {
+          "tick": 462,
+          "controls": 2
+        },
+        {
+          "tick": 467,
+          "controls": 2
+        },
+        {
+          "tick": 472,
+          "controls": 2
+        },
+        {
+          "tick": 477,
+          "controls": 2
+        },
+        {
+          "tick": 482,
+          "controls": 2
+        },
+        {
+          "tick": 487,
+          "controls": 2
+        },
+        {
+          "tick": 492,
+          "controls": 2
+        },
+        {
+          "tick": 497,
+          "controls": 2
+        },
+        {
+          "tick": 502,
+          "controls": 2
+        },
+        {
+          "tick": 507,
+          "controls": 2
+        },
+        {
+          "tick": 512,
+          "controls": 2
+        },
+        {
+          "tick": 517,
+          "controls": 2
+        },
+        {
+          "tick": 522,
+          "controls": 2
+        },
+        {
+          "tick": 527,
+          "controls": 2
+        },
+        {
+          "tick": 532,
+          "controls": 2
+        },
+        {
+          "tick": 537,
+          "controls": 2
+        },
+        {
+          "tick": 542,
+          "controls": 2
+        },
+        {
+          "tick": 547,
+          "controls": 2
+        },
+        {
+          "tick": 552,
+          "controls": 2
+        },
+        {
+          "tick": 557,
+          "controls": 2
+        },
+        {
+          "tick": 562,
+          "controls": 2
+        },
+        {
+          "tick": 567,
+          "controls": 2
+        },
+        {
+          "tick": 572,
+          "controls": 2
+        },
+        {
+          "tick": 577,
+          "controls": 2
+        },
+        {
+          "tick": 582,
+          "controls": 2
+        },
+        {
+          "tick": 587,
+          "controls": 2
+        },
+        {
+          "tick": 592,
+          "controls": 2
+        },
+        {
+          "tick": 597,
+          "controls": 2
+        },
+        {
+          "tick": 602,
+          "controls": 2
+        },
+        {
+          "tick": 607,
+          "controls": 2
+        },
+        {
+          "tick": 612,
+          "controls": 2
+        },
+        {
+          "tick": 617,
+          "controls": 2
+        },
+        {
+          "tick": 622,
+          "controls": 2
+        },
+        {
+          "tick": 627,
+          "controls": 2
+        },
+        {
+          "tick": 632,
+          "controls": 2
+        },
+        {
+          "tick": 637,
+          "controls": 2
+        },
+        {
+          "tick": 642,
+          "controls": 2
+        },
+        {
+          "tick": 647,
+          "controls": 2
+        },
+        {
+          "tick": 652,
+          "controls": 2
+        },
+        {
+          "tick": 657,
+          "controls": 2
+        },
+        {
+          "tick": 662,
+          "controls": 2
+        },
+        {
+          "tick": 667,
+          "controls": 2
+        },
+        {
+          "tick": 672,
+          "controls": 2
+        },
+        {
+          "tick": 677,
+          "controls": 2
+        },
+        {
+          "tick": 682,
+          "controls": 2
+        },
+        {
+          "tick": 687,
+          "controls": 2
+        },
+        {
+          "tick": 692,
+          "controls": 2
+        },
+        {
+          "tick": 697,
+          "controls": 2
+        }
+      ],
+      "patch_mean_rgb": [
+        [
+          85.6067,
+          84.4433,
+          132.5822
+        ],
+        [
+          85.6067,
+          84.4433,
+          132.5822
+        ],
+        [
+          85.6067,
+          84.4433,
+          132.5822
+        ],
+        [
+          85.6067,
+          84.4433,
+          132.5822
+        ],
+        [
+          85.6067,
+          84.4433,
+          132.5822
+        ],
+        [
+          85.6067,
+          84.4433,
+          132.5822
+        ],
+        [
+          85.6067,
+          84.4433,
+          132.5822
+        ],
+        [
+          85.6067,
+          84.4433,
+          132.5822
+        ]
+      ]
+    },
+    {
+      "client": "Minecraft 1.21.4 vanilla",
+      "renderer": "FAST",
+      "live_samples": 57,
+      "missing_controls": 0,
+      "image_samples": 8,
+      "patch_channel_range": 0,
+      "passed": true,
+      "control_trace": [
+        {
+          "tick": 239,
+          "controls": 2
+        },
+        {
+          "tick": 244,
+          "controls": 2
+        },
+        {
+          "tick": 249,
+          "controls": 2
+        },
+        {
+          "tick": 254,
+          "controls": 2
+        },
+        {
+          "tick": 259,
+          "controls": 2
+        },
+        {
+          "tick": 264,
+          "controls": 2
+        },
+        {
+          "tick": 269,
+          "controls": 2
+        },
+        {
+          "tick": 274,
+          "controls": 2
+        },
+        {
+          "tick": 279,
+          "controls": 2
+        },
+        {
+          "tick": 284,
+          "controls": 2
+        },
+        {
+          "tick": 289,
+          "controls": 2
+        },
+        {
+          "tick": 294,
+          "controls": 2
+        },
+        {
+          "tick": 299,
+          "controls": 2
+        },
+        {
+          "tick": 304,
+          "controls": 2
+        },
+        {
+          "tick": 309,
+          "controls": 2
+        },
+        {
+          "tick": 314,
+          "controls": 2
+        },
+        {
+          "tick": 319,
+          "controls": 2
+        },
+        {
+          "tick": 324,
+          "controls": 2
+        },
+        {
+          "tick": 329,
+          "controls": 2
+        },
+        {
+          "tick": 334,
+          "controls": 2
+        },
+        {
+          "tick": 339,
+          "controls": 2
+        },
+        {
+          "tick": 344,
+          "controls": 2
+        },
+        {
+          "tick": 349,
+          "controls": 2
+        },
+        {
+          "tick": 354,
+          "controls": 2
+        },
+        {
+          "tick": 359,
+          "controls": 2
+        },
+        {
+          "tick": 364,
+          "controls": 2
+        },
+        {
+          "tick": 369,
+          "controls": 2
+        },
+        {
+          "tick": 374,
+          "controls": 2
+        },
+        {
+          "tick": 379,
+          "controls": 2
+        },
+        {
+          "tick": 384,
+          "controls": 2
+        },
+        {
+          "tick": 389,
+          "controls": 2
+        },
+        {
+          "tick": 394,
+          "controls": 2
+        },
+        {
+          "tick": 399,
+          "controls": 2
+        },
+        {
+          "tick": 404,
+          "controls": 2
+        },
+        {
+          "tick": 409,
+          "controls": 2
+        },
+        {
+          "tick": 414,
+          "controls": 2
+        },
+        {
+          "tick": 419,
+          "controls": 2
+        },
+        {
+          "tick": 424,
+          "controls": 2
+        },
+        {
+          "tick": 429,
+          "controls": 2
+        },
+        {
+          "tick": 434,
+          "controls": 2
+        },
+        {
+          "tick": 439,
+          "controls": 2
+        },
+        {
+          "tick": 444,
+          "controls": 2
+        },
+        {
+          "tick": 449,
+          "controls": 2
+        },
+        {
+          "tick": 454,
+          "controls": 2
+        },
+        {
+          "tick": 459,
+          "controls": 2
+        },
+        {
+          "tick": 464,
+          "controls": 2
+        },
+        {
+          "tick": 469,
+          "controls": 2
+        },
+        {
+          "tick": 474,
+          "controls": 2
+        },
+        {
+          "tick": 479,
+          "controls": 2
+        },
+        {
+          "tick": 484,
+          "controls": 2
+        },
+        {
+          "tick": 489,
+          "controls": 2
+        },
+        {
+          "tick": 494,
+          "controls": 2
+        },
+        {
+          "tick": 499,
+          "controls": 2
+        },
+        {
+          "tick": 504,
+          "controls": 2
+        },
+        {
+          "tick": 509,
+          "controls": 2
+        },
+        {
+          "tick": 514,
+          "controls": 2
+        },
+        {
+          "tick": 519,
+          "controls": 2
+        }
+      ],
+      "patch_mean_rgb": [
+        [
+          83.4067,
+          83.1356,
+          129.05
+        ],
+        [
+          83.4067,
+          83.1356,
+          129.05
+        ],
+        [
+          83.4067,
+          83.1356,
+          129.05
+        ],
+        [
+          83.4067,
+          83.1356,
+          129.05
+        ],
+        [
+          83.4067,
+          83.1356,
+          129.05
+        ],
+        [
+          83.4067,
+          83.1356,
+          129.05
+        ],
+        [
+          83.4067,
+          83.1356,
+          129.05
+        ],
+        [
+          83.4067,
+          83.1356,
+          129.05
+        ]
+      ]
+    }
+  ],
+  "unchanged_shader_counts_against_1_8_6": {
+    "1.21.X": 100,
+    "26.1.X": 24,
+    "26.2.X": 24,
+    "26.3.X": 24
+  },
+  "scope": [
+    "The block edge is placed near the emitted lens; breathing changes only the server scan.",
+    "26.3 uses a texture registration/readback agent and temporary pre-spotlight colour/depth recording passes.",
+    "Legacy native clients use the shipped post graph and a finite GPU readback agent.",
+    "Only live samples before disconnect are counted. Explicit off/blackout and cleanup are checked separately.",
+    "A repeated isolated test does not certify all worlds, camera motion, GPUs or third-party shaderpacks.",
+    "OptiFine 26.3 is not listed at https://optifine.net/downloads as checked on 2026-11-15."
+  ],
+  "lit_baseline_patch_byte_identical_to_corrected": true
+}

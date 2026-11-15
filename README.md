@@ -6,15 +6,25 @@ FlashLight combines a visible beam with light on walls, floors, players, and mob
 
 The server controls the item and its optical data. A standard resource pack draws the light over Minecraft's existing scene, preserving textures and animations. The main renderer uses no particles or LIGHT blocks and requires no client mod or separate shaderpack.
 
-**Current release: 1.8.1.** Paper 1.21.4–1.21.11, 26.1–26.1.2, 26.2, and 26.3. All documentation, configuration comments, and player messages are in English.
+**Current release: 1.8.7.** Paper 1.21.4–1.21.11, 26.1–26.1.2, 26.2, and 26.3. All documentation, configuration comments, and player messages are in English.
 
-**1.8.1 grip correction:** the third-person lens faces forward, the switch sits on top, and the handle sits inside the vanilla fist in both hands. This corrects the reversed orientation left in 1.8.0. See the [technical before/after preview](docs/third-person-grip-preview.png). Install the matching 1.8.1 JAR and distribute its updated resource pack.
+**1.8.6 surface stability:** removes premature alpha rounding that made capped surface colours alternate between adjacent RGB values as incident or ambient light changed. Both renderers now normalize capped colours with continuous opacity while retaining the previous encoding at softer edges. Temporal GPU checks cover fast/compatible variants, all 13 native profiles and 26.3 zero-to-one depth. The fast lighting/shadow kernel, pass graph, textures and models are retained. The earlier local-air scan correction remains included.
+
+**1.8.7 near-lens stability:** collision scans shorter than 8 cm no longer delete a powered optical controller. Breathing across a nearby block edge previously switched the entire beam off and on, including its independent first-person ray. A native 26.3 before/after scene reproduces the dropout and verifies the correction. Shaders, render passes, textures and optical settings are unchanged from 1.8.6. Native OptiFine validation uses 1.21.4 HD U J3 with external shaders OFF; there is no official OptiFine 26.3 build in the checked download list. The earlier [dusk measurements](docs/FlashLight-Flicker-Investigation-26.3.txt) concern a separate small change in vanilla input colour, not this controller dropout.
+
+**Renderer selection:** the fast renderer remains the default. A separate compatible variant fits 16 varying vectors / 61 scalar components while retaining 32 lights, eight body shadows and full precision. Standalone delivery can retry that variant once per player when Minecraft reports `FAILED_RELOAD`; `/flashlight pack compatible` and `/flashlight pack fast` select it manually for the current connection. Vanilla clients do not report their GPU, and late post-processing failures may not report a reload failure. Nexo/TRP keep their shared delivery; use `resource-pack.renderer: COMPATIBLE` explicitly for their whole pack. Actual Intel HD 2500 testing is still needed.
+
+The asynchronous Modrinth checker announces newer stable Paper releases for the server's exact Minecraft version, at most once per 24 hours in console and per administrator, including across `/flashlight reload`.
+
+**1.8.2 fixes:** standalone hosting and join delivery now start automatically; old export-only defaults migrate once. Foreground edges no longer truncate the whole surface-lighting cone. Modern shader profiles use native float bit conversion to reduce repeated decoding work.
+
+**1.8.1 grip correction:** the third-person lens faces forward, the switch sits on top, and the handle sits inside the vanilla fist in both hands. This corrects the reversed orientation left in 1.8.0. See the [technical before/after preview](docs/third-person-grip-preview.png). Install the matching 1.8.7 JAR and distribute its updated resource pack.
 
 ## Documentation and wiki
 
 The [complete English wiki document](docs/FlashLight-Wiki-EN.txt) explains installation, every setting, commands, multiplayer behavior, item data, rendering, performance, integrations, troubleshooting, and development. It is a plain UTF-8 text file that can be downloaded or split into wiki pages.
 
-The [verification report](docs/FlashLight-Verification-1.8.1.txt) records the checks performed on the release and their limits.
+The [verification report](docs/FlashLight-Verification-1.8.6.txt) records the checks performed on the release and their limits.
 
 | Start here | What you will find |
 | --- | --- |
@@ -41,14 +51,14 @@ The [verification report](docs/FlashLight-Verification-1.8.1.txt) records the ch
 
 ## Downloads and versions
 
-Download the [complete release ZIP](build/releases/FlashLight-1.8.1-complete.zip) for all four plugin JARs, their resource packs, the default configuration, and English documentation. Install **one** JAR on a server.
+Download the [complete release ZIP](build/releases/FlashLight-1.8.7-complete.zip) for all four plugin JARs, their resource packs, the default configuration, and English documentation. Install **one** JAR on a server. Choose its branch from the running **Paper server version**, rather than the client version. Paper 1.21.4 requires the `1.21.X` JAR; Paper 26.3 requires `26.3.X`.
 
 | Plugin file | Supported native server versions | Server Java |
 | --- | --- | --- |
-| [FlashLight-1.8.1-1.21.X.jar](build/libs/FlashLight-1.8.1-1.21.X.jar) | 1.21.4, .5, .6, .7, .8, .9, .10, .11 | 21 |
-| [FlashLight-1.8.1-26.1.X.jar](build/libs/FlashLight-1.8.1-26.1.X.jar) | 26.1, 26.1.1, 26.1.2 | 25 |
-| [FlashLight-1.8.1-26.2.X.jar](build/libs/FlashLight-1.8.1-26.2.X.jar) | 26.2 | 25 |
-| [FlashLight-1.8.1-26.3.X.jar](build/libs/FlashLight-1.8.1-26.3.X.jar) | 26.3 | 25 |
+| [FlashLight-1.8.7-1.21.X.jar](build/libs/FlashLight-1.8.7-1.21.X.jar) | 1.21.4, .5, .6, .7, .8, .9, .10, .11 | 21 |
+| [FlashLight-1.8.7-26.1.X.jar](build/libs/FlashLight-1.8.7-26.1.X.jar) | 26.1, 26.1.1, 26.1.2 | 25 |
+| [FlashLight-1.8.7-26.2.X.jar](build/libs/FlashLight-1.8.7-26.2.X.jar) | 26.2 | 25 |
+| [FlashLight-1.8.7-26.3.X.jar](build/libs/FlashLight-1.8.7-26.3.X.jar) | 26.3 | 25 |
 
 The `X` identifies a release family. Future patches and snapshots require validation; the plugin checks its supported native versions during startup. This release starts at **1.21.4**, not earlier 1.21 releases. Protocol translation does not automatically select a different renderer for each client.
 
@@ -57,13 +67,13 @@ Each JAR embeds its matching pack. Separate ZIPs are available in [build/distrib
 ## Installation
 
 1. Stop Paper, select the JAR for its Minecraft branch, and place it in `plugins`. Remove the previous FlashLight JAR and restart.
-2. Configure pack delivery. Supported Nexo/TRP installations can manage it; otherwise host the exported ZIP at a direct URL or enable FlashLight's HTTP server.
+2. Pack delivery starts automatically. Supported Nexo/TRP installations manage the shared pack; otherwise FlashLight hosts its bundled ZIP on TCP port 8192 and sends it on join. Make that HTTP port reachable by clients.
 3. Accept the resource pack in the client. Run `/flashlight give`, hold the flashlight, and right-click.
 4. Test against a wall, in both hands, in F5, and with a second player.
 
-For upgrades, retain the plugin data directory and existing items, but distribute the new resource pack too. Version 1.8.1 requires its new control textures and shaders.
+For upgrades, retain the plugin data directory and existing items, but distribute the new resource pack too. Version 1.8.7 fixes near-lens controller dropouts on the server and includes the earlier surface-composition corrections. Its shader files are identical to 1.8.6; older installations still need the updated pack.
 
-Standalone defaults export the pack without publishing it: the URL is empty, `send-on-join` is false, and the built-in HTTP host is disabled. Exporting a ZIP does not make it downloadable from the Internet.
+Standalone defaults host the pack and send it thirty ticks after join, including to connected players after a plugin reload. With an empty `server.public-url`, the download uses the hostname/IP the player used to connect and HTTP port `8192`. That TCP port must be reachable; proxies, SRV records, NAT or a different public port can require an explicit `server.public-url`. An external `resource-pack.url` takes priority. Upgrades migrate the old export-only defaults once, with a config backup; later explicit opt-outs are retained.
 
 The normal resource pack contains the shaders. An external shaderpack or rendering mod can replace the stages FlashLight uses. On OptiFine, start with **Shaders: OFF** and validate the exact client configuration.
 
@@ -166,9 +176,13 @@ Run `/flashlight reload` after editing. It stops active lights and rebuilds the 
 
 Most optical settings travel in entity metadata. Glare changes require the updated pack on clients. `light.entities.enabled: false` selects the older block-surface fallback; that mode does not provide the main renderer's entity lighting, body shadows, or face glare.
 
+## Update checks
+
+Update checks use [MrDino's official Modrinth project](https://modrinth.com/plugin/the-flashlight-plugin), ID `J6Ka5Ie8`. Configure `updates.enabled`, `updates.check-interval-hours` (default 24), and `updates.notify-admins`. The first check runs after ten seconds; network failures do not stop the plugin. The checker never installs updates. Console and administrator notices have separate 24-hour cooldowns retained by `/flashlight reload`; each administrator is tracked by UUID.
+
 ## Resource pack providers
 
-- **Standalone:** use a direct ZIP URL and SHA-1, or enable the optional HTTP host with a public URL clients can reach. `/flashlight pack` requests the active pack; `/flashlight pack export` shows its local path.
+- **Standalone:** the built-in HTTP host and join delivery are enabled by default. Use a direct ZIP URL and SHA-1 or override the public HTTP base when needed. `/flashlight pack` requests the active pack; `/flashlight pack export` shows its local path. Both fast and compatible ZIPs are exported in `plugins/FlashLight/`. With external hosting, set `resource-pack.compatibility-url` to the compatible ZIP to enable selection/retry. `resource-pack.renderer: FAST` disables automatic retries; `AUTO` is the default.
 - **Nexo:** `AUTO` uses a MultiPack template on supported Nexo 1.27+ installations and `external_packs` on older versions. Nexo hosts and sends the shared pack. Existing administrator choices in `multipack.yml` are preserved. See [Nexo's MultiPack documentation](https://docs.nexomc.com/configuration/resourcepack/multipack-feature).
 - **TRP Server Edition:** its overlay API combines the flashlight branch with the host renderer, retaining the host's rendering path and pack provider.
 - **StrobeLights:** matching native resources can be composed into the flashlight pack while retaining Strobe's marker renderer. Legacy integrations have regression fixtures; every external plugin still needs a renderer compatible with the server version in use.
@@ -215,7 +229,7 @@ python tools/package_release.py
 
 The native probe requires an existing accepted `eula.txt`; its `--eula` argument accepts that path. All probe servers and worlds stay under `build/compat-smoke`. The probe is separate from the distributed plugin.
 
-Automated checks cover plugin behavior, item persistence, configuration migration, provider integration, held geometry, multiplayer control visibility, actual OpenGL shader output, version-specific shader compilation, and 26.3 SPIR-V compilation. Native Paper probes check startup and display behavior across the published server versions. The [verification report](docs/FlashLight-Verification-1.8.1.txt) distinguishes these checks from live multiplayer client testing and production server profiling.
+Automated checks cover plugin behavior, item persistence, configuration migration, provider integration, held geometry, multiplayer control visibility, actual OpenGL shader output, version-specific shader compilation, and 26.3 SPIR-V compilation. Native Paper probes check startup and display behavior across the published server versions. The [verification report](docs/FlashLight-Verification-1.8.6.txt) distinguishes these checks from live multiplayer client testing and production server profiling.
 
 To regenerate assets, see section 31 of the wiki. Generated shader adaptations are committed to the project, so an ordinary build does not download Minecraft clients.
 

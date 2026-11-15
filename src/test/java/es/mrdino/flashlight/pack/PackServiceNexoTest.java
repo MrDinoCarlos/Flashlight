@@ -135,4 +135,20 @@ class PackServiceNexoTest {
             verify(server,never()).dispatchCommand(any(),anyString());
         }
     }
+
+    @Test void clientRendererSelectionDoesNotReplaceTheSharedProviderPack() throws Exception {
+        try(var packs=new PackService(plugin)) {
+            drain();
+            Player player=mock(Player.class);
+            packs.renderer(player,true); packs.renderer(player,false);
+            var failure=mock(org.bukkit.event.player.PlayerResourcePackStatusEvent.class);
+            when(failure.getPlayer()).thenReturn(player);
+            when(failure.getID()).thenReturn(UUID.fromString("b946fb5e-f484-37d6-8fd5-cfe7139c566d"));
+            when(failure.getStatus()).thenReturn(org.bukkit.event.player.PlayerResourcePackStatusEvent.Status.FAILED_RELOAD);
+            packs.failedReload(failure);
+            assertTrue(tasks.isEmpty());
+            verify(player,never()).addResourcePack(any(UUID.class),anyString(),any(),anyString(),anyBoolean());
+            verify(player,never()).removeResourcePack(any(UUID.class));
+        }
+    }
 }

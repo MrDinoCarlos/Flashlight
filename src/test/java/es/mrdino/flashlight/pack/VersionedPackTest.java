@@ -107,7 +107,24 @@ class VersionedPackTest {
     @ParameterizedTest
     @ValueSource(strings={"1.21.4","1.21.5","1.21.6","1.21.7","1.21.8","1.21.9","1.21.10","1.21.11","26.1","26.1.1","26.1.2","26.2","26.3"})
     void shippedPackUsesTheNativeSchemaAndLinksAgainstThatClientsUniforms(String minecraft) throws Exception {
-        var pack=pack(minecraft);
+        verifyPack(minecraft,pack(minecraft));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"1.21.4","1.21.5","1.21.6","1.21.7","1.21.8","1.21.9","1.21.10","1.21.11","26.1","26.1.1","26.1.2","26.2","26.3"})
+    void compatiblePackUsesTheNativeSchemaAndLinksAgainstThatClientsUniforms(String minecraft) throws Exception {
+        var fast=pack(minecraft);
+        var compatible=ShaderComposer.read(RendererProfiles.compatible(ShaderComposer.write(fast)));
+        assertEquals(fast.keySet(),compatible.keySet());
+        for(String path:fast.keySet()) {
+            if(path.equals("assets/flashlight/shaders/post/spotlight.vsh") || path.equals("assets/flashlight/shaders/post/spotlight.fsh"))
+                assertArrayEquals(fast.get(path.replace("spotlight.","spotlight_compat.")),compatible.get(path));
+            else assertArrayEquals(fast.get(path),compatible.get(path),path+" is shared by both profiles");
+        }
+        verifyPack(minecraft,compatible);
+    }
+
+    private void verifyPack(String minecraft,Map<String,byte[]> pack) throws Exception {
         var metadata=json(pack,"pack.mcmeta").getAsJsonObject("pack");
         assertEquals(PackCompatibility.format(minecraft),PackCompatibility.major(metadata.get("min_format")));
         assertTrue(pack.keySet().stream().noneMatch(path->path.startsWith("mc_")),"Export resolves native overlays before integration");
@@ -172,6 +189,34 @@ class VersionedPackTest {
             assertThrows(IllegalArgumentException.class,()->PackCompatibility.format(version));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings={"1.21.4","1.21.5","1.21.6","1.21.7","1.21.8","1.21.9","1.21.10","1.21.11","26.1","26.1.1","26.1.2","26.2","26.3"})
+    void spotlightFitsTheMinimumOpenGlVaryingBudget(String minecraft) throws Exception {
+        var assets=ShaderComposer.read(RendererProfiles.compatible(ShaderComposer.write(pack(minecraft))));
+        var declaration=Pattern.compile("(?m)^(?:layout\\(location = (\\d+)\\) )?(?:flat )?(in|out) (\\w+) (\\w+)(?:\\[(\\d+)\\])?;");
+        for(String stage:List.of("vsh","fsh")) {
+            var matches=declaration.matcher(text(assets,"assets/flashlight/shaders/post/spotlight."+stage));
+            int components=0,vectors=0;
+            var locations=new HashSet<Integer>();
+            while(matches.find()) {
+                if(!matches.group(2).equals(stage.equals("vsh") ? "out" : "in")) continue;
+                String type=matches.group(3);
+                int width=type.matches(".*[234]") ? Character.digit(type.charAt(type.length()-1),10) : 1;
+                int columns=type.startsWith("mat") ? width : 1;
+                int count=matches.group(5)==null ? 1 : Integer.parseInt(matches.group(5));
+                components+=width*columns*count; vectors+=columns*count;
+                if(matches.group(1)!=null) for(int i=0;i<columns*count;i++) {
+                    int location=Integer.parseInt(matches.group(1))+i;
+                    assertTrue(location<16,minecraft+" varying location must fit 16 vec4 slots");
+                    assertTrue(locations.add(location),minecraft+" has overlapping varying locations");
+                }
+            }
+            assertTrue(components<=64,minecraft+" "+stage+" uses "+components+" varying components; budget is 64");
+            assertTrue(vectors<=16,minecraft+" "+stage+" uses "+vectors+" varying vectors; budget is 16");
+            assertTrue(components>0,"The budget check must inspect an actual interface");
+        }
+    }
+
     /** Executes the real graph, including each version's actual UBO byte layout. */
     private static final class NativeProjection implements AutoCloseable {
         private static final int SIZE=192;
@@ -179,12 +224,13 @@ class VersionedPackTest {
         final Map<String,byte[]> assets;
         final String minecraft;
         final boolean zeroToOne;
+        boolean compositionScene;
         final JsonObject graph;
         final Map<String,Target> targets=new java.util.LinkedHashMap<>();
         final List<Integer> programs=new ArrayList<>(),textures=new ArrayList<>(),buffers=new ArrayList<>(),fbos=new ArrayList<>();
         final List<Integer> stages=new ArrayList<>();
         final Matrix4f projection=new Matrix4f().perspective((float)Math.toRadians(70),1,.05f,128);
-        final int vao=glGenVertexArrays(),vbo=glGenBuffers(),ebo=glGenBuffers(),outline,marker;
+        final int vao=glGenVertexArrays(),vbo=glGenBuffers(),ebo=glGenBuffers(),outline,marker,localRight,localLeft;
         NativeProjection(Map<String,byte[]> assets,String minecraft) throws Exception { this(assets,minecraft,false); }
         NativeProjection(Map<String,byte[]> assets,String minecraft,boolean zeroToOne) throws Exception {
             this.assets=assets; this.minecraft=minecraft; this.zeroToOne=zeroToOne;
@@ -207,12 +253,16 @@ class VersionedPackTest {
                 } else { vertex=stage.get("vertex_shader").getAsString(); fragment=stage.get("fragment_shader").getAsString(); }
                 stages.add(compile("assets/"+vertex.replace(":","/shaders/")+".vsh","assets/"+fragment.replace(":","/shaders/")+".fsh"));
             }
-            var image=ImageIO.read(new java.io.ByteArrayInputStream(assets.get("assets/flashlight/textures/item/beam/entity_control.png")));
-            marker=texture(GL_RGBA8,GL_RGBA,16,16);
+            marker=marker("entity_control"); localRight=marker("entity_control_right"); localLeft=marker("entity_control_left");
+            glBindVertexArray(vao); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ebo); glBufferData(GL_ELEMENT_ARRAY_BUFFER,new int[]{0,1,2,0,2,3},GL_STATIC_DRAW);
+        }
+        int marker(String name) throws Exception {
+            var image=ImageIO.read(new java.io.ByteArrayInputStream(assets.get("assets/flashlight/textures/item/beam/"+name+".png")));
+            int marker=texture(GL_RGBA8,GL_RGBA,16,16);
             ByteBuffer pixels=BufferUtils.createByteBuffer(16*16*4);
             for(int y=0;y<16;y++) for(int x=0;x<16;x++) { int p=image.getRGB(x,y); pixels.put((byte)(p>>16)).put((byte)(p>>8)).put((byte)p).put((byte)(p>>>24)); }
             pixels.flip(); glTexSubImage2D(GL_TEXTURE_2D,0,0,0,16,16,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-            glBindVertexArray(vao); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ebo); glBufferData(GL_ELEMENT_ARRAY_BUFFER,new int[]{0,1,2,0,2,3},GL_STATIC_DRAW);
+            return marker;
         }
         int compile(String vertex,String fragment) throws Exception { int p=program(assets,minecraft,vertex,fragment,zeroToOne ? "#define RENDERPEARL_DEPTH_IS_ZERO_TO_ONE\n" : ""); programs.add(p); return p; }
         int texture(int format,int type,int width,int height) {
@@ -270,15 +320,24 @@ class VersionedPackTest {
             glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,0L); glDisableVertexAttribArray(position); if(uv>=0) glDisableVertexAttribArray(uv);
         }
         ByteBuffer frame(double power) throws Exception {
+            return frame(power,20,1);
+        }
+        ByteBuffer frame(double power,float sampledReach,float airVisibility) throws Exception {
+            return frame(power,sampledReach,airVisibility,marker,0);
+        }
+        ByteBuffer frame(double power,float sampledReach,float airVisibility,int control,float originZ) throws Exception {
             Target scene=targets.get("minecraft:main"),data=targets.get("minecraft:entity_outline");
-            clear(scene); glClearColor(.06f,.045f,.03f,1);
+            clear(scene);
+            if(compositionScene) glClearColor(31/255f,22/255f,12/255f,1);
+            else glClearColor(.06f,.045f,.03f,1);
             var position=projection.transform(new org.joml.Vector4f(0,0,-8,1)); glClearDepth(zeroToOne ? position.z/position.w : position.z/position.w*.5+.5); glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
             float[] depth=new float[SIZE*SIZE]; glReadPixels(0,0,SIZE,SIZE,GL_DEPTH_COMPONENT,GL_FLOAT,depth);
             clear(data); glDisable(GL_DEPTH_TEST); glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
-            glUseProgram(outline); uniforms(outline,projection,SIZE,SIZE,0,0); bind(outline,"Sampler0",0,marker);
+            glUseProgram(outline); uniforms(outline,projection,SIZE,SIZE,0,0); bind(outline,"Sampler0",0,control);
             int color=glGetAttribLocation(outline,"Color"),word=(int)Math.round(power*255)<<5 | 16<<13 | 24<<18;
             glDisableVertexAttribArray(color); glVertexAttrib4f(color,(word&255)/255f,(word>>>8&255)/255f,(word>>>16&255)/255f,1);
-            draw(outline,new float[]{1,10,0,1,-10,0,-1,-10,0,-1,10,0});
+            float halfWidth=(1+airVisibility)*.5f,halfHeight=sampledReach*.5f;
+            draw(outline,new float[]{halfWidth,halfHeight,originZ,halfWidth,-halfHeight,originZ,-halfWidth,-halfHeight,originZ,-halfWidth,halfHeight,originZ});
             int stageIndex=0;
             for(var element:graph.getAsJsonArray("passes")) {
                 var stage=element.getAsJsonObject(); Target output=targets.get(stage.get("output").getAsString());
@@ -295,7 +354,25 @@ class VersionedPackTest {
             }
             glBindFramebuffer(GL_FRAMEBUFFER,scene.framebuffer); float[] after=new float[SIZE*SIZE]; glReadPixels(0,0,SIZE,SIZE,GL_DEPTH_COMPONENT,GL_FLOAT,after);
             assertArrayEquals(depth,after,"Native post passes retain the scene depth on "+minecraft);
-            glBindFramebuffer(GL_FRAMEBUFFER,data.framebuffer); ByteBuffer result=BufferUtils.createByteBuffer(SIZE*SIZE*4); glReadPixels(0,0,SIZE,SIZE,GL_RGBA,GL_UNSIGNED_BYTE,result); return result;
+            glBindFramebuffer(GL_FRAMEBUFFER,data.framebuffer); ByteBuffer result=BufferUtils.createByteBuffer(SIZE*SIZE*4); glReadPixels(0,0,SIZE,SIZE,GL_RGBA,GL_UNSIGNED_BYTE,result);
+            return result;
+        }
+        ByteBuffer visible(ByteBuffer overlay) {
+            // Match the native straight-alpha blit onto this fixture's flat scene.
+            // RGB under zero alpha has no visible contribution.
+            int[] background=compositionScene ? new int[]{31,22,12} : new int[]{15,11,8};
+            ByteBuffer result=BufferUtils.createByteBuffer(overlay.limit());
+            for(int p=0;p<overlay.limit();p+=4) {
+                int alpha=overlay.get(p+3)&255;
+                for(int c=0;c<3;c++) result.put(p+c,(byte)Math.round(((overlay.get(p+c)&255)*alpha+background[c]*(255-alpha))/255f));
+                result.put(p+3,(byte)255);
+            }
+            return result;
+        }
+        void sameVisible(ByteBuffer first,ByteBuffer second,String reason) {
+            ByteBuffer a=visible(first),b=visible(second); int maximum=0,changed=0;
+            for(int p=0;p<a.limit();p++) { int delta=Math.abs((a.get(p)&255)-(b.get(p)&255)); maximum=Math.max(maximum,delta); if(delta!=0) changed++; }
+            assertEquals(0,maximum,reason+"; changed components="+changed);
         }
         void check() throws Exception {
             ByteBuffer on=frame(.8),off=frame(0),dim=frame(.12);
@@ -304,6 +381,27 @@ class VersionedPackTest {
             assertEquals(0,off.get(center+3)&255,minecraft+" has no residual light at power zero");
             assertTrue((dim.get(center+3)&255)>0,minecraft+" transports partial intensity through its native UBOs");
             assertEquals(0,on.get((SIZE*10+180)*4+3)&255,minecraft+" keeps pixels outside the cone unchanged");
+            ByteBuffer farReach=frame(.8,20,0),nearReach=frame(.8,4,0);
+            assertTrue((nearReach.get(center+3)&255)>0,minecraft+" lights a far receiver even when the sparse server scan ends nearby");
+            sameVisible(farReach,nearReach,minecraft+" sparse foreground scan changes do not blink surface lighting");
+            for(int hand:new int[]{localRight,localLeft}) {
+                ByteBuffer steady=frame(.8,20,1,hand,-.3f);
+                for(float scan:new float[]{4.01f,20,4.04f,8.1f})
+                    sameVisible(steady,frame(.8,scan,1,hand,-.3f),minecraft+" stationary local air must not pulse with sparse collision scans");
+                assertNotEquals(visible(frame(.8,20,1,hand,-3)),visible(frame(.8,4,1,hand,-3)),minecraft+" F5 retains its world-space air collision bound");
+            }
+            compositionScene=true;
+            try {
+                byte[] expected=null;
+                for(int index=0;index<16;index++) {
+                    ByteBuffer image=frame(.75+index*.25/15,20,0);
+                    assertEquals(102,image.get(center+3)&255,minecraft+" exercises the transparency cap");
+                    byte[] color={image.get(center),image.get(center+1),image.get(center+2)};
+                    assertEquals(255,color[0]&255,minecraft+" retains the exact dominant colour at the exposure cap");
+                    if(expected==null) expected=color;
+                    else assertArrayEquals(expected,color,minecraft+" capped surface colour must not shimmer across intensity changes");
+                }
+            } finally { compositionScene=false; }
         }
         @Override public void close() { programs.forEach(org.lwjgl.opengl.GL33C::glDeleteProgram); textures.forEach(org.lwjgl.opengl.GL33C::glDeleteTextures); buffers.forEach(org.lwjgl.opengl.GL33C::glDeleteBuffers); fbos.forEach(org.lwjgl.opengl.GL33C::glDeleteFramebuffers); glDeleteBuffers(vbo); glDeleteBuffers(ebo); glDeleteVertexArrays(vao); }
     }

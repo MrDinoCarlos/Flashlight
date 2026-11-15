@@ -414,9 +414,15 @@ class CoreShaderGpuTest {
         assertEquals(GL_TRUE,glGetShaderi(shader,GL_COMPILE_STATUS),name+": "+glGetShaderInfoLog(shader)); return shader;
     }
     static String source(Path path) throws Exception {
-        return expand(Files.readString(path));
+        return source(path,java.util.Map.of());
+    }
+    static String source(Path path,java.util.Map<String,Path> overrides) throws Exception {
+        return expand(Files.readString(path),overrides);
     }
     private static String expand(String content) throws Exception {
+        return expand(content,java.util.Map.of());
+    }
+    private static String expand(String content,java.util.Map<String,Path> overrides) throws Exception {
         StringBuilder out=new StringBuilder(); var include=Pattern.compile("#moj_import <(?:(\\w+):)?([^>]+)>");
         for(String line:content.lines().toList()) {
             var matcher=include.matcher(line);
@@ -426,7 +432,8 @@ class CoreShaderGpuTest {
                         ? Path.of("src/test/resources/compat/strobe/utils.glsl") : Path.of("src/test/resources/gpu/minecraft",matcher.group(2))
                         : PACK.resolve("assets/"+namespace+"/shaders/include/"+matcher.group(2));
                 // Minecraft's preprocessor merges the imported #version declarations.
-                out.append(source(target).replaceAll("(?m)^#version[^\\r\\n]*", ""));
+                target=overrides.getOrDefault(namespace+":"+matcher.group(2),target);
+                out.append(source(target,overrides).replaceAll("(?m)^#version[^\\r\\n]*", ""));
             } else out.append(line).append('\n');
         }
         return out.toString();

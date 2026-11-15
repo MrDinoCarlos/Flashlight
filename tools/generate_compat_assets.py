@@ -130,7 +130,7 @@ def main():
                 source = locations(source, mapping=mapping)
             save(output, path, modern_source(source, explicit) if modern else source)
 
-        for name in ("control_copy", "outline", "spotlight"):
+        for name in ("control_copy", "outline", "spotlight", "spotlight_compat"):
             for stage in ("vsh", "fsh"):
                 path = f"assets/flashlight/shaders/post/{name}.{stage}"
                 source = read(BASE, path)
@@ -146,11 +146,18 @@ def main():
                     if name == "outline":
                         source = source.replace("void main() {", "uniform sampler2D InSampler;\nvoid main() {", 1)
                 if explicit:
-                    if name == "spotlight" and stage == "fsh":
+                    if name in ("spotlight", "spotlight_compat") and stage == "fsh":
+                        source = source.replace("float ndcDepth=depth*2.0-1.0;", "#ifdef RENDERPEARL_DEPTH_IS_ZERO_TO_ONE\n    float ndcDepth=depth;\n#else\n    float ndcDepth=depth*2.0-1.0;\n#endif")
                         source = source.replace("vec4 p=inverseProjection*vec4(uv*2.0-1.0,depth*2.0-1.0,1.0);", "#ifdef RENDERPEARL_DEPTH_IS_ZERO_TO_ONE\n    float ndcDepth=depth;\n#else\n    float ndcDepth=depth*2.0-1.0;\n#endif\n    vec4 p=inverseProjection*vec4(uv*2.0-1.0,ndcDepth,1.0);")
-                    mapping = {"texCoord": 0, "oneTexel": 1, "fragColor": 0, "flActiveLights": 1, "flFirstLight": 2,
-                               "flProjection": 3, "flInverseProjection": 7, "flOriginPower": 11, "flAxisRange": 12, "flOptics": 13,
-                               "flActiveShadows": 14, "flShadowCenters": 15, "flShadowAxes": 23}
+                    mapping = {"texCoord": 0, "oneTexel": 1, "fragColor": 0}
+                    if name == "spotlight":
+                        mapping.update({"flActiveLights": 1, "flFirstLight": 2, "flProjection": 3, "flInverseProjection": 7,
+                                        "flOriginPower": 11, "flAxisRange": 12, "flOptics": 13, "flActiveShadows": 14,
+                                        "flShadowCenters": 15, "flShadowAxes": 23})
+                    if name == "spotlight_compat":
+                        mapping.update({"flState": 1, "flProjection": 2,
+                                        "flOriginPower": 6, "flAxisRange": 7, "flOpticsState": 8,
+                                        "flInverseData": 9, "flShadowCenters": 10, "flShadowAxes": 13})
                     source = locations(source, mapping=mapping)
                 save(output, path, modern_source(source, explicit) if modern else source)
 

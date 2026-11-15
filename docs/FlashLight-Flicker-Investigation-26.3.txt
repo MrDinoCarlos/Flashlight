@@ -1,0 +1,80 @@
+FLASHLIGHT 26.3 - RESIDUAL FLICKER INVESTIGATION
+Date: 2026-11-15
+Status of these dusk measurements: separate from the 1.8.7 near-lens correction.
+Follow-up: the later 03:41 video prompted a native reproduction of powered
+controllers disappearing at a collision edge. That server-side defect is fixed
+in 1.8.7; see FlashLight-Native-Lens-Regression-1.8.7.json. The earlier small
+scene-colour variation measured below does not explain that complete dropout.
+
+The user's continued report supersedes any assumption that the 1.8.5/1.8.6
+synthetic regressions establish a complete fix for the recorded effect.
+
+NATIVE REPRODUCTION
+
+An isolated Paper 26.3 build 222 server and official Minecraft 26.3 client
+were launched through Quick Play on loopback. Tests used both FAST and
+COMPATIBLE profiles on an RTX 3060, NVIDIA 617.42. The final controlled run
+used OpenGL, 1376x776, gamma 0, nearest texture filtering, VSync off, maximum
+260 FPS and render distance 5. The real server uses build 223 and the user's
+render distance is 12, so these are not identical complete environments.
+
+A read-only copy of the user's world and saved camera position was used.
+Original world files, player settings and installed server configuration
+were not changed. The isolated player was made invulnerable. Random plugin
+faults were disabled. The original flashlight renderers were retained.
+A temporary diagnostic Java agent registered texture allocations and read
+GPU textures. Temporary copies of the pack added two recording passes for
+pre-spotlight colour and encoded depth. These diagnostics are not shipped.
+Consequently this is an instrumented native-client measurement, not an
+unmodified end-user play session or an FPS benchmark.
+
+The test started at dusk, then stopped only the isolated world's daylight
+cycle in the same session. It collected 200 optical samples and 40 image
+sets over approximately 20 seconds. All readback callbacks completed.
+Own test clients and servers stopped after the captures.
+
+MEASURED RESULT
+
+For a fixed opaque 35x45 oak patch, over 11 sampled dusk frames:
+- Pre-spotlight scene RGB changed by up to 2 of 255 per pixel/channel.
+- Encoded scene depth was byte-for-byte constant.
+- Final composited RGB changed by up to 20 of 255 per pixel/channel.
+- Local origin, direction, strength, configured extent and projection stayed
+  fixed. Geometric air visibility varied only by floating-point roundoff.
+
+After freezing daylight and allowing it to settle, all 16 subsequent image
+samples of that same patch were byte-for-byte identical in pre-spotlight
+RGB, encoded depth, overlay RGBA and final RGB. Earlier FAST captures with
+fixed time also retained exactly stable RGB in the selected receiving patch.
+The separate Vulkan run completed optical readback; its limited image
+samples do not establish equivalent image stability or performance.
+
+INTERPRETATION AND LIMITS
+
+The current effect brightens the already lit, RGBA8 vanilla scene. Near dusk,
+small quantized changes in that dark input are amplified by the exposure.
+The controlled run establishes that mechanism for this receiving patch.
+It does not prove that it explains every flicker in the user's video, moving
+animals, camera motion, other times of day, graphics settings or GPUs.
+This is not evidence that the user's client has mods or a stale pack.
+The user's 1.8.6 FAST and COMPATIBLE downloads were present in the cache.
+
+The previous regression varies optical intensity with a fixed input scene.
+It cannot cover this changing vanilla input. A future correction must check
+that case as well as moving cameras, texture detail, translucent layers,
+colour, latency and measured GPU cost. Freezing the live server's time,
+changing users' brightness, blurring textures or adding unmeasured history
+passes is not a validated solution. No such production change was made.
+
+REVIEWABLE CHANGES IN THIS INVESTIGATION
+
+config.yml now includes commented automatic pack download examples for the
+built-in HTTP server, a reverse proxy and an external ZIP host. Defaults and
+production rendering code are unchanged by this follow-up. The comments
+are in newly built JAR resources; an existing config is not replaced just to
+insert documentation. The previously packaged complete release ZIP remains
+an earlier artifact and was not republished as a flicker fix.
+
+Validation: gradlew build smokeProbe succeeded; 178 tests, 0 failures/errors.
+Detailed frame measurements: FlashLight-Flicker-26.3-Metrics.json.
+Raw captures and isolated fixture: build/runtime-gpu (local ignored files).

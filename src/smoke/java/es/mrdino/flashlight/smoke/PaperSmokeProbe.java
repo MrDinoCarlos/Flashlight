@@ -157,6 +157,25 @@ public final class PaperSmokeProbe extends JavaPlugin {
                 require(Math.abs(control.getTransformation().getScale().x()-(1+visibility))<.00001,
                         "Air visibility reaches native display metadata without turning off direct light");
             }
+            // Native collision, not a fabricated extent: all discovery rays hit
+            // the block a few centimetres beyond the lens. Keep the same
+            // controller when alternating that scan with unobstructed air.
+            var savedCamera=camera[0].clone();
+            var pose=es.mrdino.flashlight.light.HeldItemPose.load(plugin);
+            camera[0]=new Location(world,0,65.62,2-.02+pose.right().origin().z(),0,0);
+            var nearLens=world.getBlockAt(-1,65,2);
+            for(boolean blocked:new boolean[]{true,false,true,false}) {
+                nearLens.setType(blocked ? Material.STONE : Material.AIR,false);
+                precise.invalidate(nearLens.getLocation());
+                precise.update(viewpoint,EquipmentSlot.HAND,1,plugin.settings(),132);
+                require(precise.screenLightCount(id)==1 && control.isValid(),
+                        "Near-lens collision must not switch off or recreate a powered controller");
+                if(blocked) require(control.getTransformation().getScale().y()<.08,
+                        "The native fixture actually reaches the short collision-scan branch");
+            }
+            camera[0]=savedCamera;
+            precise.invalidate(nearLens.getLocation());
+            precise.update(viewpoint,EquipmentSlot.HAND,1,plugin.settings(),132);
             var shadowPlayers=new java.util.ArrayList<Player>(); shadowPlayers.add(viewpoint);
             for(int caster=0;caster<12;caster++) {
                 UUID casterId=UUID.randomUUID(); double z=3+caster*.1;
@@ -207,7 +226,23 @@ public final class PaperSmokeProbe extends JavaPlugin {
             }
             plugin.reloadFlashlight();
             require(plugin.isEnabled(),"Reload keeps plugin enabled");
-            Files.writeString(Path.of("result.txt"),"PASS: real Paper "+Bukkit.getMinecraftVersion()+"; native items; commands; reload; stable wall reuse; invisible blocks ignored; foreground/background; grazing floor; bounded displays; next-tick turning; dimmer; blackout; cleanup; shared/private optical controls; eight shared body shadows; adjustable air visibility; unchanged entity metadata and block light; one resource pack.\n");
+            String[] downloadUrl={null}; byte[][] downloadHash={null};
+            Player downloadClient=(Player)Proxy.newProxyInstance(Player.class.getClassLoader(),new Class<?>[]{Player.class},(proxy,method,args)->switch(method.getName()) {
+                case "getUniqueId" -> UUID.fromString("00000000-0000-0000-0000-000000000001");
+                case "getVirtualHost" -> java.net.InetSocketAddress.createUnresolved("127.0.0.1",Bukkit.getPort());
+                case "addResourcePack" -> { downloadUrl[0]=(String)args[1]; downloadHash[0]=(byte[])args[2]; yield null; }
+                default -> throw new UnsupportedOperationException(method.getName());
+            });
+            plugin.packs().request(downloadClient,true);
+            require(downloadUrl[0]!=null,"Standalone pack is offered without Nexo and without a configured public URL");
+            try(var client=java.net.http.HttpClient.newHttpClient()) {
+                var response=client.send(java.net.http.HttpRequest.newBuilder(java.net.URI.create(downloadUrl[0]))
+                        .timeout(java.time.Duration.ofSeconds(5)).build(),java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+                require(response.statusCode()==200,"Native standalone HTTP download succeeds");
+                require(java.util.Arrays.equals(response.body(),Files.readAllBytes(plugin.getDataFolder().toPath().resolve("FlashLight-ResourcePack.zip"))),"HTTP serves the exact native pack");
+                require(java.util.HexFormat.of().formatHex(downloadHash[0]).equals(es.mrdino.flashlight.pack.PackService.sha1(response.body())),"Offered pack SHA-1 matches downloaded bytes");
+            }
+            Files.writeString(Path.of("result.txt"),"PASS: real Paper "+Bukkit.getMinecraftVersion()+"; native items; commands; reload; stable wall reuse; invisible blocks ignored; foreground/background; grazing floor; bounded displays; next-tick turning; dimmer; blackout; cleanup; shared/private optical controls; near-lens collision controller retention; eight shared body shadows; adjustable air visibility; unchanged entity metadata and block light; one resource pack; standalone pack request and real HTTP download without Nexo.\n");
             getLogger().info("FlashLight PAPER SMOKE PASS");
         } catch(Throwable failure) {
             getLogger().log(java.util.logging.Level.SEVERE,"FlashLight PAPER SMOKE FAIL",failure);

@@ -28,6 +28,32 @@ class SpotlightGpuTest {
     private static final Path PACK=Path.of("resource-pack");
     record Target(int framebuffer,int color,int depth,int width,int height) { }
 
+    @Test void cappedSurfaceExposureDoesNotShimmerAcrossSmallIntensityChanges() throws Exception {
+        assertTrue(glfwInit()); glfwDefaultWindowHints(); glfwWindowHint(GLFW_VISIBLE,GLFW_FALSE);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3); glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
+        long window=glfwCreateWindow(192,192,"Stationary surface exposure",0,0); assertNotEquals(0,window);
+        try {
+            glfwMakeContextCurrent(window); GL.createCapabilities();
+            try(var gpu=new Pipeline(192,192)) { gpu.cappedSurfaceExposureDoesNotShimmer(); }
+        } finally { GL.setCapabilities(null); glfwDestroyWindow(window); glfwTerminate(); }
+    }
+
+    @Test void fastLightingAndShadowKernelRetainThePreviousRenderer() throws Exception {
+        var imports=Map.of("flashlight:spotlight_data.glsl",Path.of("src/test/resources/scene/spotlight-data-1.8.2.glsl"));
+        for(String stage:List.of("vsh","fsh")) {
+            String previous=CoreShaderGpuTest.source(Path.of("src/test/resources/scene/spotlight-1.8.2."+stage),imports);
+            String current=CoreShaderGpuTest.source(PACK.resolve("assets/flashlight/shaders/post/spotlight."+stage));
+            if(stage.equals("fsh")) {
+                // Composition has its own temporal regression. Keep its correction
+                // separate from the expensive transport, cone, depth and shadow work.
+                String composition="    // Encode the same exposure";
+                previous=previous.substring(0,previous.indexOf(composition));
+                current=current.substring(0,current.indexOf(composition));
+            }
+            assertEquals(previous,current,"The default kernel must retain the cached shadow path");
+        }
+    }
+
     @Test void clipsTexturedMobsAndPlayersToTheConeWithoutAnEmitterAtTheirPosition() throws Exception {
         assertTrue(glfwInit()); glfwDefaultWindowHints(); glfwWindowHint(GLFW_VISIBLE,GLFW_FALSE);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3); glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
@@ -95,9 +121,16 @@ class SpotlightGpuTest {
                 gpu.air();
                 gpu.airVisibility();
                 gpu.multiplayerShadows();
+                gpu.foregroundEdgesDoNotTruncateDistantReceivers();
+                gpu.stationaryLocalAirDoesNotPulseWithCollisionScans();
                 gpu.cameraTracking();
                 gpu.faceGlare();
-                try(var full=new Pipeline(1920,1080)) { full.profileNativeGraph(); }
+                gpu.compactInterfaceKeepsThePreviousRenderer();
+                try(var full=new Pipeline(1920,1080)) {
+                    full.profileNativeGraph(); full.compareOptimization(150,"1.8.1"); full.compareOptimization(330,"1.8.1");
+                    full.compareOptimization(150,"1.8.2"); full.compareOptimization(330,"1.8.2");
+                    full.compareCompatible(150); full.compareCompatible(330);
+                }
                 gpu.water();
                 assertEquals(GL_NO_ERROR,glGetError());
             }
@@ -126,12 +159,12 @@ class SpotlightGpuTest {
             entity=program("assets/minecraft/shaders/core/entity.vsh","assets/minecraft/shaders/core/entity.fsh",true);
             outline=program("assets/minecraft/shaders/core/rendertype_outline.vsh","assets/minecraft/shaders/core/rendertype_outline.fsh",false);
             spotlight=post("spotlight");
-            clean=program("assets/flashlight/shaders/post/spotlight.vsh","src/test/resources/scene/clean-control-1.7.1.fsh",false);
+            clean=program("src/test/resources/scene/spotlight-1.8.1.vsh","src/test/resources/scene/clean-control-1.7.1.fsh",false);
             nativeSobel=program("src/test/resources/gpu/minecraft/post_sobel.vsh","src/test/resources/gpu/minecraft/post_entity_sobel.fsh",false);
             mergedSobel=program("assets/flashlight/shaders/post/outline.vsh","assets/flashlight/shaders/post/outline.fsh",false);
             screen=program("src/test/resources/gpu/minecraft/blit_screen.vsh","src/test/resources/gpu/minecraft/blit_screen.fsh",false);
             particle=program("src/test/resources/gpu/minecraft/particle.vsh","src/test/resources/gpu/minecraft/particle.fsh",false);
-            reference=program("assets/flashlight/shaders/post/spotlight.vsh","src/test/resources/scene/spotlight-1.7.0.fsh",false);
+            reference=program("src/test/resources/scene/spotlight-1.8.1.vsh","src/test/resources/scene/spotlight-1.7.0.fsh",false);
             terrain=program("src/test/resources/gpu/minecraft/terrain.vsh","src/test/resources/gpu/minecraft/terrain.fsh",false);
             transparency=program("src/test/resources/gpu/minecraft/post_screenquad.vsh","src/test/resources/gpu/minecraft/post_transparency.fsh",false);
             marker=image(ImageIO.read(PACK.resolve("assets/flashlight/textures/item/beam/entity_control.png").toFile()));
@@ -151,10 +184,17 @@ class SpotlightGpuTest {
         }
         int post(String name) throws Exception { return program("assets/flashlight/shaders/post/spotlight.vsh","assets/flashlight/shaders/post/"+name+".fsh",false); }
         int program(String vertex,String fragment,boolean cutout) throws Exception {
+            return program(vertex,fragment,cutout,150);
+        }
+        int program(String vertex,String fragment,boolean cutout,int version) throws Exception {
             int program=glCreateProgram(); programs.add(program);
             for(String path:List.of(vertex,fragment)) {
-                String source=CoreShaderGpuTest.source(path.startsWith("assets/") ? PACK.resolve(path) : Path.of(path));
+                String pinned=path.contains("spotlight-1.8.1") ? "1.8.1" : path.contains("spotlight-1.8.2") ? "1.8.2" : null;
+                var overrides=pinned!=null
+                        ? Map.of("flashlight:spotlight_data.glsl",Path.of("src/test/resources/scene/spotlight-data-"+pinned+".glsl")) : Map.<String,Path>of();
+                String source=CoreShaderGpuTest.source(path.startsWith("assets/") ? PACK.resolve(path) : Path.of(path),overrides);
                 if(cutout) source=source.replace("#version 150","#version 150\n#define ALPHA_CUTOUT 0.1");
+                if(version!=150) source=source.replace("#version 150","#version "+version);
                 int shader=glCreateShader(path.endsWith(".vsh") ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
                 glShaderSource(shader,source); glCompileShader(shader);
                 assertEquals(GL_TRUE,glGetShaderi(shader,GL_COMPILE_STATUS),path+": "+glGetShaderInfoLog(shader));
@@ -193,6 +233,9 @@ class SpotlightGpuTest {
             glDepthMask(true); glClearDepth(1); glClearColor(0,0,0,0); glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         }
         void scene(String skin) throws Exception {
+            scene(skin,1);
+        }
+        void scene(String skin,float foregroundHalfWidth) throws Exception {
             clear(outlines);
             clear(scene); glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LEQUAL); glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
             glUseProgram(entity); matrices(entity,projection); bind(entity,"Sampler0",0,wall); bind(entity,"Sampler1",1,overlay); bind(entity,"Sampler2",2,ambient);
@@ -207,7 +250,7 @@ class SpotlightGpuTest {
             bind(entity,"Sampler0",0,texture);
             bind(entity,"Sampler2",2,ambient);
             float u0=8f/image.getWidth(),v0=8f/image.getHeight(),u1=16f/image.getWidth(),v1=16f/image.getHeight();
-            quad(entity,new float[]{-1,1,-4,-1,-1,-4,1,-1,-4,1,1,-4},new float[]{u0,v0,u0,v1,u1,v1,u1,v0});
+            quad(entity,new float[]{-foregroundHalfWidth,1,-4,-foregroundHalfWidth,-1,-4,foregroundHalfWidth,-1,-4,foregroundHalfWidth,1,-4},new float[]{u0,v0,u0,v1,u1,v1,u1,v0});
         }
         void controller(double power,Vector3f axis) {
             controller(power,axis,0);
@@ -222,6 +265,9 @@ class SpotlightGpuTest {
             clear(data); appendController(power,axis,slot,origin,visibility);
         }
         void appendController(double power,Vector3f axis,int slot,Vector3f origin,double visibility) {
+            appendController(power,axis,slot,origin,visibility,20);
+        }
+        void appendController(double power,Vector3f axis,int slot,Vector3f origin,double visibility,double visibleRange) {
             glBindFramebuffer(GL_FRAMEBUFFER,data.framebuffer); glViewport(0,0,W,H);
             glDisable(GL_DEPTH_TEST); glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
             glUseProgram(outline); matrices(outline,projection); bind(outline,"Sampler0",0,controllerMarker);
@@ -232,17 +278,20 @@ class SpotlightGpuTest {
             var rotation=new Quaternionf().rotationTo(new Vector3f(0,0,1),axis);
             float[] positions=new float[12]; float[] uv={0,0,0,1,1,1,1,0};
             for(int i=0;i<4;i++) {
-                var p=new Vector3f((i<2 ? -.5f : .5f)*(float)(1+visibility),i==0||i==3 ? 10 : -10,0); rotation.transform(p).add(origin);
+                var p=new Vector3f((i<2 ? -.5f : .5f)*(float)(1+visibility),(float)((i==0||i==3 ? .5 : -.5)*visibleRange),0); rotation.transform(p).add(origin);
                 positions[i*3]=p.x; positions[i*3+1]=p.y; positions[i*3+2]=p.z;
             }
             quad(outline,positions,uv);
         }
         void appendShadow(Vector3f centre) {
+            appendShadow(centre,0);
+        }
+        void appendShadow(Vector3f centre,int slot) {
             glBindFramebuffer(GL_FRAMEBUFFER,data.framebuffer); glViewport(0,0,W,H);
             glDisable(GL_DEPTH_TEST); glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
             glUseProgram(outline); matrices(outline,projection); bind(outline,"Sampler0",0,shadowMarker);
             glUniform2f(glGetUniformLocation(outline,"ScreenSize"),W,H);
-            constant(outline,"Color",0,0,0,1);
+            constant(outline,"Color",slot/255f,0,0,1);
             quad(outline,new float[]{centre.x-.3f,centre.y+.9f,centre.z,centre.x-.3f,centre.y-.9f,centre.z,
                     centre.x+.3f,centre.y-.9f,centre.z,centre.x+.3f,centre.y+.9f,centre.z},new float[]{0,0,0,1,1,1,1,0});
         }
@@ -256,6 +305,50 @@ class SpotlightGpuTest {
             save(shadow,Path.of("build/shared-player-shadow.png"));
             scene("creeper"); controller(1,new Vector3f(0,0,-1)); appendShadow(new Vector3f(0,0,-7)); project();
             assertAppearance(lit,pixels(scene),"A caster behind the receiver cannot shadow that receiver");
+        }
+        void foregroundEdgesDoNotTruncateDistantReceivers() throws Exception {
+            scene("creeper",.1f); ByteBuffer dark=pixels(scene);
+            clear(data); appendController(1,new Vector3f(0,0,-1),0,new Vector3f(),0,20); project();
+            ByteBuffer full=pixels(scene);
+            int wall=(H/2*W+W/2+40)*4;
+            assertTrue(max(full,wall)>max(dark,wall)+4,"The wall beside a narrow foreground object is illuminated: "+max(dark,wall)+" -> "+max(full,wall));
+            // The server's sparse discovery rays can all hit the near object
+            // on one scan and find the far wall on the next. This air-volume
+            // limit must not switch every more distant receiver off and on.
+            for(double sampledReach:new double[]{4.01,4.05,8.1,4.02}) {
+                scene("creeper",.1f); clear(data);
+                appendController(1,new Vector3f(0,0,-1),0,new Vector3f(),0,sampledReach); project();
+                ByteBuffer result=pixels(scene);
+                assertPixel(full,result,W/2+40,H/2,"Foreground scan changes must not blink the distant wall");
+                assertPixel(full,result,W/2,H/2,"The foreground stays lit too");
+            }
+        }
+        void stationaryLocalAirDoesNotPulseWithCollisionScans() throws Exception {
+            int saved=controllerMarker;
+            try {
+                for(int hand:new int[]{localRight,localLeft}) {
+                    controllerMarker=hand;
+                    scene("creeper",.1f); clear(data);
+                    appendController(1,new Vector3f(0,0,-1),0,new Vector3f(.15f,-.2f,-.3f),1,20);
+                    project(); ByteBuffer steady=pixels(scene);
+                    for(double sampledReach:new double[]{4.01,20,4.04,8.1,4.02}) {
+                        scene("creeper",.1f); clear(data);
+                        appendController(1,new Vector3f(0,0,-1),0,new Vector3f(.15f,-.2f,-.3f),1,sampledReach);
+                        project();
+                        assertBuffer(steady,pixels(scene),"A stationary local beam must not pulse when sparse collision scans change the air limit");
+                    }
+                }
+                for(int control:new int[]{marker,localRight,localLeft}) {
+                    controllerMarker=control;
+                    scene("creeper",.1f); clear(data);
+                    appendController(1,new Vector3f(0,0,-1),0,new Vector3f(0,0,-3),1,20);
+                    project(); ByteBuffer far=pixels(scene);
+                    scene("creeper",.1f); clear(data);
+                    appendController(1,new Vector3f(0,0,-1),0,new Vector3f(0,0,-3),1,4);
+                    project();
+                    assertNotEquals(far,pixels(scene),"Remote and F5 air must retain the server collision bound");
+                }
+            } finally { controllerMarker=saved; }
         }
         void cameraTracking() throws Exception {
             var pose=JsonParser.parseString(Files.readString(PACK.resolve("assets/flashlight/flashlight_pose.json"))).getAsJsonObject().getAsJsonObject("hands");
@@ -303,6 +396,33 @@ class SpotlightGpuTest {
         void project() {
             post(spotlight,lit,scene.color,scene.depth,data.color);
             blendScreen(lit.color);
+        }
+        void cappedSurfaceExposureDoesNotShimmer() throws Exception {
+            scene("creeper");
+            int center=(H/2*W+W/2)*4;
+            for(String variant:List.of("spotlight","spotlight_compat")) {
+                int stage=program("assets/flashlight/shaders/post/"+variant+".vsh","assets/flashlight/shaders/post/"+variant+".fsh",false);
+                int[] minimum={255,255,255},maximum={0,0,0};
+                var trace=new StringBuilder("power,red,green,blue,alpha\n");
+                for(int frame=0;frame<128;frame++) {
+                    glBindFramebuffer(GL_FRAMEBUFFER,scene.framebuffer); glClearColor(31/255f,22/255f,12/255f,1); glClear(GL_COLOR_BUFFER_BIT);
+                    double power=.5+frame*.5/127;
+                    controller(power,new Vector3f(0,0,-1),0,new Vector3f(),0);
+                    post(stage,lit,scene.color,scene.depth,data.color);
+                    ByteBuffer overlay=pixels(lit);
+                    assertEquals(102,overlay.get(center+3)&255,"This regression must exercise the transparency cap");
+                    blendScreen(lit.color); ByteBuffer result=pixels(scene);
+                    for(int channel=0;channel<3;channel++) {
+                        int value=result.get(center+channel)&255;
+                        minimum[channel]=Math.min(minimum[channel],value); maximum[channel]=Math.max(maximum[channel],value);
+                    }
+                    trace.append(power);
+                    for(int channel=0;channel<4;channel++) trace.append(',').append(result.get(center+channel)&255);
+                    trace.append('\n');
+                }
+                Files.writeString(Path.of("build/surface-stability-"+variant+".csv"),trace);
+                assertArrayEquals(minimum,maximum,"A stationary capped surface must not pulse as intensity changes smoothly: "+variant);
+            }
         }
         ByteBuffer referenceImage() {
             post(reference,referenceTarget,scene.color,scene.depth,data.color);
@@ -593,6 +713,76 @@ class SpotlightGpuTest {
             glDeleteQueries(query);
             String version=Files.readString(Path.of("build.gradle.kts")).split("version = \"")[1].split("\"")[0];
             Files.writeString(Path.of("build/gpu-"+version+"-fullchain-"+W+"x"+H+".txt"),report);
+        }
+        void compactInterfaceKeepsThePreviousRenderer() throws Exception {
+            setupGraph();
+            int previous=program("src/test/resources/scene/spotlight-1.8.2.vsh","src/test/resources/scene/spotlight-1.8.2.fsh",false);
+            int original=graphPrograms.get("flashlight:post/spotlight");
+            int current=program("assets/flashlight/shaders/post/spotlight_compat.vsh","assets/flashlight/shaders/post/spotlight_compat.fsh",false);
+            Matrix4f saved=new Matrix4f(projection);
+            try {
+                for(int scenario=0;scenario<7;scenario++) {
+                    projection.set(saved);
+                    if(scenario==4) projection.m20(.07f).m21(-.04f);
+                    if(scenario==5) projection.m10(.03f);
+                    if(scenario==6) projection.setOrtho(-4,4,-2.25f,2.25f,.05f,128);
+                    ByteBuffer[] images=new ByteBuffer[2];
+                    for(int variant=0;variant<2;variant++) {
+                        scene("creeper",.1f); clear(data);
+                        boolean glare=scenario==3;
+                        appendController(1,new Vector3f(0,0,glare ? 1 : -1),31,new Vector3f(0,0,glare ? -3 : 0),1);
+                        if(scenario==0) {
+                            for(int slot=0;slot<31;slot++) appendController(.15,new Vector3f(0,0,-1),slot,new Vector3f(slot*.01f,0,0),0);
+                        } else if(scenario==1) appendShadow(new Vector3f(0,0,-2),7);
+                        else {
+                            // The last caster blocks the centre. It must be read
+                            // beyond the three cached bodies, even with sparse slots.
+                            for(int slot=0;slot<8;slot++) appendShadow(new Vector3f(slot==7 ? 0 : 2+slot*.25f,0,-2),slot);
+                        }
+                        graphPrograms.put("flashlight:post/spotlight",variant==0 ? previous : current);
+                        renderGraph(); images[variant]=pixels(scene);
+                    }
+                    assertAppearance(images[0],images[1],"Compact varyings retain 1.8.2 appearance in scenario "+scenario);
+                }
+            } finally { projection.set(saved); graphPrograms.put("flashlight:post/spotlight",original); }
+        }
+        void compareCompatible(int version) throws Exception { compareOptimization(version,"1.8.2",true); }
+        void compareOptimization(int version,String baseline) throws Exception {
+            compareOptimization(version,baseline,false);
+        }
+        void compareOptimization(int version,String baseline,boolean compatible) throws Exception {
+            setupGraph();
+            int before=program("src/test/resources/scene/spotlight-"+baseline+".vsh","src/test/resources/scene/spotlight-"+baseline+".fsh",false,version);
+            int original=graphPrograms.get("flashlight:post/spotlight");
+            String shader=compatible ? "spotlight_compat" : "spotlight";
+            int after=!compatible && version==150 ? original : program("assets/flashlight/shaders/post/"+shader+".vsh","assets/flashlight/shaders/post/"+shader+".fsh",false,version);
+            StringBuilder report=new StringBuilder(glGetString(GL_RENDERER)+"; "+W+"x"+H+"; GLSL "+version+"; baseline "+baseline+"; interleaved complete graph A/B\n");
+            int query=glGenQueries();
+            try {
+                for(int[] scenario:new int[][]{{0,0},{1,0},{4,0},{1,8},{4,8}}) {
+                    long[][] times=new long[2][31];
+                    ByteBuffer[] images=new ByteBuffer[2];
+                    for(int frame=-6;frame<31;frame++) for(int order=0;order<2;order++) {
+                        int variant=(frame+order)&1;
+                        scene("creeper"); clear(data);
+                        for(int slot=0;slot<scenario[0];slot++) appendController(1,new Vector3f(0,0,-1),slot,new Vector3f(slot*.08f,0,0),1);
+                        for(int slot=0;slot<scenario[1];slot++) appendShadow(new Vector3f((slot-3)*.35f,0,-2),slot);
+                        graphPrograms.put("flashlight:post/spotlight",variant==0 ? before : after);
+                        glBeginQuery(GL_TIME_ELAPSED,query); renderGraph(); glEndQuery(GL_TIME_ELAPSED);
+                        long elapsed=glGetQueryObjecti64(query,GL_QUERY_RESULT);
+                        if(frame>=0) times[variant][frame]=elapsed;
+                        if(frame==30) images[variant]=pixels(scene);
+                    }
+                    assertAppearance(images[0],images[1],"Optimization retains the original light and body shadows");
+                    for(long[] samples:times) java.util.Arrays.sort(samples);
+                    report.append("lights=").append(scenario[0]).append("; shadows=").append(scenario[1])
+                            .append("; before median GPU ms=").append(times[0][15]/1_000_000.0)
+                            .append("; after median GPU ms=").append(times[1][15]/1_000_000.0)
+                            .append("; change percent=").append(100.0*(times[1][15]-times[0][15])/times[0][15]).append('\n');
+                }
+                String prefix=compatible ? "gpu-compatibility" : baseline.equals("1.8.1") ? "gpu-optimization" : "gpu-fast";
+                Files.writeString(Path.of("build/"+prefix+"-glsl"+version+"-"+W+"x"+H+".txt"),report);
+            } finally { graphPrograms.put("flashlight:post/spotlight",original); glDeleteQueries(query); }
         }
         void matrices(int program,Matrix4f projection) {
             matrix(program,"ModelViewMat",new Matrix4f()); matrix(program,"TextureMat",new Matrix4f()); matrix(program,"ProjMat",projection);

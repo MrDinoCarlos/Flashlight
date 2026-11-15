@@ -77,4 +77,32 @@ class ConfigUpdaterTest {
         ConfigUpdater.update(file, defaults());
         assertEquals("my-custom-value", YamlConfiguration.loadConfiguration(file.toFile()).getString("light"));
     }
+
+    @Test void oldExportOnlyPackDefaultsAreEnabledOnceAndBackedUp() throws Exception {
+        Path file=directory.resolve("config.yml");
+        String old="resource-pack:\n  url: ''\n  sha1: ''\n  send-on-join: false\n  server:\n    enabled: false\n    public-url: ''\n    port: 9000\n";
+        Files.writeString(file,old);
+        try(var source=getClass().getResourceAsStream("/config.yml")) { assertTrue(ConfigUpdater.update(file,source)); }
+        var config=YamlConfiguration.loadConfiguration(file.toFile());
+        assertTrue(FlashlightSettings.load(config).packOnJoin());
+        assertTrue(config.getBoolean("resource-pack.server.enabled"));
+        assertEquals(9000,config.getInt("resource-pack.server.port"));
+        assertEquals(old,Files.readString(directory.resolve("config.yml.before-update.bak")));
+        // After migration, an administrator can explicitly turn either feature off.
+        config.set("resource-pack.send-on-join",false);
+        config.set("resource-pack.server.enabled",false);
+        config.save(file.toFile());
+        try(var source=getClass().getResourceAsStream("/config.yml")) { assertFalse(ConfigUpdater.update(file,source)); }
+        assertFalse(FlashlightSettings.load(YamlConfiguration.loadConfiguration(file.toFile())).packOnJoin());
+    }
+
+    @Test void configuredExternalDeliveryIsNotOverwrittenByTheMigration() throws Exception {
+        Path file=directory.resolve("config.yml");
+        Files.writeString(file,"resource-pack:\n  url: 'https://packs.example.com/custom.zip'\n  send-on-join: false\n  server:\n    enabled: false\n");
+        try(var source=getClass().getResourceAsStream("/config.yml")) { ConfigUpdater.update(file,source); }
+        var config=YamlConfiguration.loadConfiguration(file.toFile());
+        assertEquals("https://packs.example.com/custom.zip",config.getString("resource-pack.url"));
+        assertFalse(config.getBoolean("resource-pack.send-on-join"));
+        assertFalse(config.getBoolean("resource-pack.server.enabled"));
+    }
 }

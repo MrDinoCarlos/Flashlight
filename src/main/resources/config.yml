@@ -67,10 +67,55 @@ battery:
 effects:
   sounds: true
 
+updates:
+  # Check stable releases from MrDino's official Modrinth project for this Paper/Minecraft version.
+  # Runs asynchronously, first after 10 seconds. Never downloads or installs an update.
+  enabled: true
+  check-interval-hours: 24
+  # Console and each admin are notified at most once per 24 hours, even after /flashlight reload.
+  notify-admins: true
+
 crafting:
   flashlight-enabled: true
 
 resource-pack:
+  # AUTOMATIC PACK DOWNLOAD WHEN A PLAYER JOINS (built-in HTTP hosting):
+  # Keep url: '', send-on-join: true and server.enabled: true below.
+  # Example for a server reached through play.example.com:
+  #   server:
+  #     enabled: true
+  #     bind: '0.0.0.0'
+  #     port: 8192
+  #     public-url: 'http://play.example.com:8192'
+  # Replace play.example.com with your server's public IP/domain. Players must
+  # be able to reach TCP port 8192: open/forward it in your hosting panel/router.
+  # The Minecraft game port (usually 25565) does not also open this HTTP port.
+  # Use a different HTTP port for each server sharing the same machine/IP.
+  # Leaving public-url empty automatically uses the hostname the player joined.
+  # An explicit public-url is useful with proxies, SRV records or port mapping.
+  # It is a BASE URL: FlashLight appends /packs/<sha1>.zip automatically.
+  # Example with an HTTPS reverse proxy: public-url: 'https://packs.example.com'
+  # The proxy must forward /packs/ requests to the HTTP listener configured here.
+  #
+  # EXTERNAL ZIP HOSTING (alternative to the built-in host):
+  # Upload plugins/FlashLight/FlashLight-ResourcePack.zip, then use:
+  #   url: 'https://cdn.example.com/FlashLight-ResourcePack.zip'
+  #   sha1: ''
+  #   send-on-join: true
+  # Use a direct downloadable ZIP URL. Upload the new export after each update.
+  # A nonempty url takes priority and prevents the built-in HTTP host starting.
+  # Clients accept the pack in Minecraft; their server-pack setting must allow it.
+  # Nexo/TRP own pack hosting/sending when enabled: configure their provider instead.
+  # These examples send the RESOURCE PACK; Modrinth only checks for plugin updates.
+  # AUTO keeps the fast renderer, with one per-player compatible retry after a
+  # reload failure when FlashLight owns delivery. No GPU model is sent by vanilla clients.
+  # FAST disables retries. COMPATIBLE exports the compact renderer for everyone,
+  # including Nexo/TRP installations; choose it explicitly if your provider needs it.
+  renderer: AUTO
+  # Optional direct URL to the exported compatible ZIP when using external hosting.
+  compatibility-url: ''
+  # Internal migration marker. Old export-only defaults are upgraded once.
+  config-version: 2
   nexo:
     # When Nexo is enabled it alone hosts/sends the pack, as in TRP.
     enabled: true
@@ -82,12 +127,14 @@ resource-pack:
   # Also exported to plugins/FlashLight/FlashLight-ResourcePack.zip.
   url: ''
   sha1: ''
-  send-on-join: false
+  send-on-join: true
   required: false
   prompt: 'Load FlashLight flashlight models and lighting.'
-  # Optional built-in HTTP host for the shared pack. No skin downloads or personal packs.
+  # Used without Nexo/TRP or an external URL. Clients must be able to reach this TCP port.
   server:
-    enabled: false
+    enabled: true
     bind: '0.0.0.0'
     port: 8192
+    # Empty: use the hostname/IP the player used to connect, with the HTTP port above.
+    # Set an explicit base URL for proxies, SRV records or a different public HTTP port.
     public-url: ''

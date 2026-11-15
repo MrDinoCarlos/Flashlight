@@ -14,7 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 
-/** Add missing defaults without resetting existing values, unknown keys or comments. */
+/** Add missing defaults and apply versioned migrations, retaining comments and a backup. */
 public final class ConfigUpdater {
     private ConfigUpdater() { }
 
@@ -31,7 +31,8 @@ public final class ConfigUpdater {
         String original=new String(previous,StandardCharsets.UTF_8);
         String migrated=original.replace("NIGHT"+"FALL","FlashLight");
         existing.loadFromString(migrated);
-        boolean changed = merge(existing, defaults) || !original.equals(migrated);
+        boolean changed = upgradePackDelivery(existing, defaults);
+        changed |= merge(existing, defaults) || !original.equals(migrated);
         if (!changed) return false;
         Path backup = file.resolveSibling(file.getFileName() + ".before-update.bak");
         if (!Files.exists(backup)) Files.write(backup, previous, java.nio.file.StandardOpenOption.CREATE_NEW);
@@ -41,6 +42,23 @@ public final class ConfigUpdater {
             try { Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
             catch (AtomicMoveNotSupportedException ignored) { Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING); }
         } finally { Files.deleteIfExists(temporary); }
+        return true;
+    }
+
+    private static boolean upgradePackDelivery(YamlConfiguration existing, YamlConfiguration defaults) {
+        if (defaults.getInt("resource-pack.config-version", 0) < 2
+                || existing.getInt("resource-pack.config-version", 0) >= 2) return false;
+        if (existing.contains("resource-pack", true) && !existing.isConfigurationSection("resource-pack")) return false;
+        if (existing.contains("resource-pack.server", true) && !existing.isConfigurationSection("resource-pack.server")) return false;
+        // Only migrate the old combination that never published or sent a pack.
+        // Keep custom URLs, enabled hosts and separately configured join behavior.
+        boolean exportOnly = existing.getString("resource-pack.url", "").isBlank()
+                && existing.getString("resource-pack.server.public-url", "").isBlank()
+                && !existing.getBoolean("resource-pack.send-on-join", false)
+                && !existing.getBoolean("resource-pack.server.enabled", false);
+        if (!exportOnly) return false;
+        existing.set("resource-pack.send-on-join", true);
+        existing.set("resource-pack.server.enabled", true);
         return true;
     }
 

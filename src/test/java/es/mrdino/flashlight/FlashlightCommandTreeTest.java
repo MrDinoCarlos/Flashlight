@@ -56,6 +56,16 @@ class FlashlightCommandTreeTest {
 
     private String[] aryEq(String... values) { return org.mockito.AdditionalMatchers.aryEq(values); }
 
+    @Test void rendererProfilesAreLiteralPackCommands() throws Exception {
+        dispatcher.execute("flashlight pack compatible",source);
+        dispatcher.execute("flashlight pack fast",source);
+        verify(executor).execute(eq(source.getSender()),aryEq("pack","compatible"),isNull());
+        verify(executor).execute(eq(source.getSender()),aryEq("pack","fast"),isNull());
+        when(source.getSender().hasPermission("flashlight.pack")).thenReturn(false);
+        assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException.class,
+                ()->dispatcher.execute("flashlight pack compatible",source));
+    }
+
     @Test void parameterRangesAndPermissionsAreEnforcedBeforeExecuting() throws Exception {
         assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException.class,
                 () -> dispatcher.execute("flashlight flicker Explorer 3s 101", source));

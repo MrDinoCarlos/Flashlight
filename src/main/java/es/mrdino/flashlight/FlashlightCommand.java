@@ -31,8 +31,10 @@ public final class FlashlightCommand implements TabExecutor {
         if (sub.equals("pack")) {
             if (!sender.hasPermission("flashlight.pack")) { error(sender, "You do not have permission."); return 0; }
             if (args.length == 2 && args[1].equalsIgnoreCase("export")) plugin.packs().export(sender);
+            else if(args.length==2 && sender instanceof Player player && (args[1].equalsIgnoreCase("compatible") || args[1].equalsIgnoreCase("fast")))
+                plugin.packs().renderer(player,args[1].equalsIgnoreCase("compatible"));
             else if (args.length == 1 && sender instanceof Player player) plugin.packs().request(player, false);
-            else error(sender, "Usage: /flashlight pack [export]");
+            else error(sender, "Usage: /flashlight pack [export|compatible|fast]");
             return 1;
         }
         if (!sender.hasPermission("flashlight.admin")) { error(sender, "You do not have permission."); return 0; }
@@ -128,7 +130,7 @@ public final class FlashlightCommand implements TabExecutor {
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage(FlashlightItems.text("/flashlight pack [export]", NamedTextColor.GRAY));
+        sender.sendMessage(FlashlightItems.text("/flashlight pack [export|compatible|fast]", NamedTextColor.GRAY));
         if (!sender.hasPermission("flashlight.admin")) return;
         for (String line : List.of("/flashlight give [targets]", "/flashlight battery [targets] [1-64]",
                 "/flashlight recharge [targets]", "/flashlight on|off [targets] [duration]",
@@ -149,7 +151,7 @@ public final class FlashlightCommand implements TabExecutor {
         if (args.length == 1) {
             options.addAll(List.of("help", "pack"));
             if (sender.hasPermission("flashlight.admin")) { options.addAll(TARGETED); options.add("reload"); }
-        } else if (args.length == 2 && sub.equals("pack")) options.add("export");
+        } else if (args.length == 2 && sub.equals("pack")) options.addAll(List.of("export","compatible","fast"));
         else if (sender.hasPermission("flashlight.admin") && TARGETED.contains(sub)) {
             if (args.length == 2) {
                 options.addAll(List.of("@p", "@a", "@s", "@r"));

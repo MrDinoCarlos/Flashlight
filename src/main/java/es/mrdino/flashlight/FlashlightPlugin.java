@@ -2,6 +2,7 @@ package es.mrdino.flashlight;
 
 import es.mrdino.flashlight.light.LightEngine;
 import es.mrdino.flashlight.pack.PackService;
+import es.mrdino.flashlight.update.ModrinthUpdateChecker;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -22,6 +23,7 @@ public class FlashlightPlugin extends JavaPlugin {
     private LightEngine lights;
     private FlashlightService service;
     private PackService packs;
+    private ModrinthUpdateChecker updates;
     private NamespacedKey flashlightRecipe, batteryRecipe;
 
     @Override
@@ -46,6 +48,8 @@ public class FlashlightPlugin extends JavaPlugin {
             Objects.requireNonNull(getCommand("flashlight")).setTabCompleter(command);
             registerCommandTree(command);
             getServer().getPluginManager().registerEvents(new FlashlightListener(this), this);
+            updates = new ModrinthUpdateChecker(this);
+            updates.start();
             getLogger().info("FlashLight ready. Beam shaders are included in the resource pack.");
         } catch (Exception exception) {
             getLogger().log(Level.SEVERE, "Could not start FlashLight.", exception);
@@ -63,6 +67,8 @@ public class FlashlightPlugin extends JavaPlugin {
         packs = new PackService(this);
         service = new FlashlightService(this, items, lights);
         recipes();
+        if (updates != null) updates.reload();
+        else { updates = new ModrinthUpdateChecker(this); updates.start(); }
     }
 
     protected void registerCommandTree(FlashlightCommand command) {
@@ -94,6 +100,7 @@ public class FlashlightPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (updates != null) updates.close();
         if (service != null) service.shutdown();
         else if (lights != null) lights.clear();
         if (packs != null) packs.close();

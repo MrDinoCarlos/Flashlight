@@ -22,6 +22,7 @@ public record FlashlightSettings(
     public record Shadows(boolean enabled, int maxCasters, int updateInterval) { }
     public record Glare(boolean enabled, double strength, int maxDistance) { }
     public static FlashlightSettings load(FileConfiguration config) {
+        es.mrdino.flashlight.pack.RendererProfiles.validate(config);
         int minInterval = clamp(config.getInt("flicker.min-interval-seconds", 25), 2, 3600) * 20;
         int maxInterval = Math.max(minInterval,
                 clamp(config.getInt("flicker.max-interval-seconds", 65), 2, 3600) * 20);
@@ -65,7 +66,7 @@ public record FlashlightSettings(
                 config.getBoolean("battery.crafting-enabled", true),
                 config.getBoolean("crafting.flashlight-enabled", true),
                 config.getBoolean("effects.sounds", true),
-                url, sha1, config.getBoolean("resource-pack.send-on-join", false),
+                url, sha1, config.getBoolean("resource-pack.send-on-join", true),
                 config.getBoolean("resource-pack.required", false),
                 config.getString("resource-pack.prompt", "Load FlashLight flashlight models and lighting."),
                 new Tracking(config.getBoolean("light.shared-light", true),

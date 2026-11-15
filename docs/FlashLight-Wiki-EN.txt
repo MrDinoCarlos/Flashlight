@@ -1,6 +1,6 @@
-FLASHLIGHT 1.8.1 — COMPLETE WIKI REFERENCE
+FLASHLIGHT 1.8.7 — COMPLETE WIKI REFERENCE
 Minecraft Java / Paper — MrDino
-Edition: 25 October 2026
+Edition: 14 November 2026
 Format: plain text, UTF-8
 Copyright (c) 2026 MrDino
 License: CC-BY-NC-ND-4.0 — see ../LICENSE for the complete official English text.
@@ -105,20 +105,20 @@ potion, inflict damage, or take control of the player's camera.
 
 The release contains four plugin files. Install exactly one on a server:
 
-  FlashLight-1.8.1-1.21.X.jar
+  FlashLight-1.8.2-1.21.X.jar
     Native Paper/Minecraft: 1.21.4, 1.21.5, 1.21.6, 1.21.7,
     1.21.8, 1.21.9, 1.21.10, 1.21.11.
     Server Java: 21.
 
-  FlashLight-1.8.1-26.1.X.jar
+  FlashLight-1.8.2-26.1.X.jar
     Native Minecraft family: 26.1, 26.1.1, 26.1.2.
     Server Java: 25.
 
-  FlashLight-1.8.1-26.2.X.jar
+  FlashLight-1.8.2-26.2.X.jar
     Published native version covered by this edition: 26.2.
     Server Java: 25.
 
-  FlashLight-1.8.1-26.3.X.jar
+  FlashLight-1.8.2-26.3.X.jar
     Published native version covered by this edition: 26.3.
     Server Java: 25.
 
@@ -158,7 +158,8 @@ thirteen full game sessions.
 3) Start Paper. The plugin creates plugins/FlashLight/config.yml and exports
    plugins/FlashLight/FlashLight-ResourcePack.zip.
 4) Choose a delivery provider. A supported Nexo/TRP installation can manage
-   the pack. Otherwise configure a direct ZIP URL or the built-in HTTP host.
+   the pack. Otherwise the built-in HTTP host sends the pack automatically;
+   make its configured TCP port (8192 by default) reachable by clients.
 5) Load the pack in a native client. Check the client log if it reports a
    failed resource reload.
 6) As an administrator, run /flashlight give.
@@ -167,10 +168,12 @@ thirteen full game sessions.
 8) Check the other hand, third-person/F5 view, water behavior, and a second
    player with the same pack loaded.
 
-Standalone defaults intentionally export without automatically publishing:
-resource-pack.url is empty, send-on-join is false, and the HTTP server is
-disabled. A local exported file is not a public download address. Copying
-its path into a browser on another machine does not host it.
+Standalone defaults enable send-on-join and the HTTP server. An empty
+public-url uses each player's connection hostname/IP with HTTP port 8192.
+That port must be reachable; a proxy, SRV record, NAT or a different public
+port may need an explicit public-url. The old export-only defaults migrate
+once, keeping a backup. Subsequent explicit disable settings are preserved.
+Reload also requests the pack for players who are already connected.
 
 If using an external URL, upload the final exported pack and configure
 the SHA-1 of those exact bytes. If you change glare settings later, repeat
@@ -344,6 +347,11 @@ lines are shown according to the executor's permissions.
     Ask the active provider to send/reapply its pack to the executor.
     Without a configured deliverable pack, show the exported file path.
 
+  /flashlight pack compatible
+  /flashlight pack fast
+    Select the compact or original fast variant for your current connection.
+    Available with standalone delivery; Nexo/TRP retain their shared provider.
+
   /flashlight pack export
     Show the local exported pack path. This does not upload the file.
 
@@ -471,17 +479,18 @@ crafting:
   flashlight-enabled: true
 
 resource-pack:
+  config-version: 2
   nexo:
     enabled: true
     integration: AUTO
     auto-rebuild: true
   url: ''
   sha1: ''
-  send-on-join: false
+  send-on-join: true
   required: false
   prompt: 'Load FlashLight flashlight models and lighting.'
   server:
-    enabled: false
+    enabled: true
     bind: '0.0.0.0'
     port: 8192
     public-url: ''
@@ -809,9 +818,10 @@ resource-pack.sha1 — default empty
   elsewhere. PowerShell can calculate it with:
     Get-FileHash -LiteralPath 'FlashLight-ResourcePack.zip' -Algorithm SHA1
 
-resource-pack.send-on-join — default false
+resource-pack.send-on-join — default true
   Requests the standalone pack thirty ticks after join if the player is
-  still connected. Provider integrations manage their own delivery.
+  still connected, and for online players after reload. Provider integrations
+  manage their own delivery.
 
 resource-pack.required — default false
   Marks standalone delivery as required. Minecraft handles acceptance or
@@ -824,14 +834,17 @@ resource-pack.prompt
 
 BUILT-IN HTTP HOST
 
-resource-pack.server.enabled — default false
+resource-pack.server.enabled — default true
 resource-pack.server.bind — default 0.0.0.0
 resource-pack.server.port — default 8192; valid range 1–65535
 resource-pack.server.public-url — default empty
 
-When enabled, public-url must be a valid public HTTP(S) base with a host
-and no query or fragment. For example: https://packs.example.com. Clients
-receive a path such as /packs/<sha1>.zip appended to that base.
+When public-url is empty, the URL is http://<connection-host>:<http-port>
+plus /packs/<sha1>.zip. An explicit public-url overrides that host and port;
+it must be a valid public HTTP(S) base with a host and no query or fragment.
+For example: https://packs.example.com. Clients receive the same hash path
+appended to that base. No listener is started when an external pack URL
+already supplies standalone delivery.
 
 The bind address selects the listening interface. 0.0.0.0 is not a public
 client URL. A reverse proxy, router, or hosting setup must route the
@@ -839,7 +852,7 @@ published URL to the configured listener. The plugin does not configure
 DNS, certificates, firewall rules, or port forwarding.
 
 GET and HEAD are supported. Other methods receive 405; paths other than
-the current pack receive 404. The response includes type, length, ETag,
+the current fast/compatible hash routes receive 404. The response includes type, length, ETag,
 and immutable caching tied to its content hash. Two daemon worker threads
 serve the pack. The content-addressed URL changes when the bytes change.
 
@@ -1248,7 +1261,7 @@ not used as a control-data sprite.
 
 The 1.8.0 translation-only correction left the third-person lens pointing
 backward through Minecraft's native hand rotation. Its grip check also
-allowed the handle to sit below the actual hand box. Version 1.8.1 corrects
+allowed the handle to sit below the actual hand box. Version 1.8.2 corrects
 both orientation and position for both third-person hands:
 
   rotation:    [90, 0, 180]
@@ -1886,9 +1899,9 @@ for artifact SHA-256 values and the full distinction between automated
 checks and live client testing.
 
 BEGIN GENERATED VERIFICATION
-Release: FlashLight 1.8.1
-Packaged: 2026-10-25 12:08:30 UTC
-Automated tests: 110 passed; 0 failures; 0 errors; 0 skipped.
+Release: FlashLight 1.8.7
+Packaged: 2026-11-15 03:07:31 UTC
+Automated tests: 179 passed; 0 failures; 0 errors; 0 skipped.
 Pack validation: 1,181 base models; valid JSON/UVs/textures; embedded packs match distributed ZIPs.
 Rendering profiles checked: 13 native Minecraft client releases.
 Native Paper probes: 12 passed; each report matches the final distributed JAR SHA-256.
@@ -1910,3 +1923,210 @@ Native Minecraft / Paper build / result / server Java:
 Plain Paper 26.1 was not available in the retrieved published server list.
 The 26.1 client renderer is checked; native server probes cover 26.1.1 and 26.1.2.
 END GENERATED VERIFICATION
+
+1.8.2 RENDERING AND DELIVERY FIXES
+
+Standalone pack delivery is enabled by default and old export-only defaults
+migrate once, with a configuration backup. The HTTP port must be reachable;
+set public-url when the connection hostname does not reach the HTTP host.
+
+The sparse collision scan bounds the air volume. It no longer cuts off
+surface lighting on more distant receivers beside a foreground edge. Surface
+lighting uses each visible pixel's depth and screen-space/body occlusion.
+This fixes a reproducible near/far receiver blink, but does not turn screen
+depth into a complete map of off-screen geometry.
+
+Modern GLSL profiles use native float bit conversion for metadata instead
+of rebuilding floats with logarithms/exponents. Legacy GLSL keeps its
+compatible arithmetic path. Performance measurements describe effect cost,
+not total game FPS. Unlimited FPS can fully occupy the GPU even without
+FlashLight; use the client's FPS limit to control that workload.
+
+1.8.7 NEAR-LENS COLLISION STABILITY
+
+A short server collision scan was incorrectly treated as a switched-off light.
+If breathing moved the lens across a nearby block edge, all discovery rays could
+hit within 8 cm. The plugin deleted its shared and private optical controllers,
+then respawned them on the next clear scan. The independent local camera ray
+could not keep rendering after its controller had disappeared.
+
+Powered controls now survive short and zero-length discovery scans. The existing
+minimum display scale remains 0.01; remote air retains its sampled extent and
+the client continues clipping receivers by scene depth. Off commands, blackouts
+and disconnect cleanup still remove the light immediately. This server-side fix
+adds no shader sample, pass, target or varying. All shader files are unchanged
+from 1.8.6, including the fast default and the optional compact renderer.
+
+A stationary native 26.3 fixture with a block edge at the lens reproduced 25
+missing-controller samples out of 69 in 1.8.6. The same fixture with 1.8.7 kept
+all 69 samples active; the measured illuminated patch stayed exactly stable.
+The native server probe repeats near-lens collisions across every tested Paper
+branch. Actual OptiFine validation uses 1.21.4 HD U J3, Shaders OFF, not a shader
+fixture alone. OptiFine 26.3 is not listed on its official download page as of
+2026-11-15, so that combination is not certified. External shaderpacks and other
+OptiFine options require separate validation when they replace vanilla stages.
+
+Install the matching new server JAR and restart. Existing 1.8.6 shader code can
+render the corrected controls. Normal native pack export, automatic join delivery
+and provider integration remain enabled; the bundled default config also includes
+commented built-in HTTP, reverse-proxy and external ZIP download examples.
+
+
+1.8.6 SURFACE COMPOSITION STABILITY
+
+A supplied 26.3 recording showed small changes over the illuminated tree texture
+with a nearly stationary camera. The client cache contained the 1.8.5 pack with
+its local-air fix before the recording; this was not an unrefreshed 1.8.4 pack.
+The previous local-air regression covered a different cause and remains fixed.
+
+Surface composition rounded its required overlay opacity to RGBA8 precision
+before calculating the overlay colour and then applying the transparency cap.
+When light intensity or scene colour changed, this early rounding made already
+capped RGB values jump backwards and forwards. On the regression's fixed brown
+surface the old output alternated between red 120-121, green 85-86, blue 46-47.
+
+Both renderer variants now use continuous opacity to normalize colour when the
+transparency cap applies. The previous quantized encoding remains at softer
+uncapped edges, preserving their behaviour. The 0.40 alpha cap is unchanged.
+The same 128-frame GPU regression now returns constant 121,86,47 RGB. Native
+profile checks also verify capped RGB stability and the existing 0.40 alpha cap
+across all 13 supported client versions and the 26.3 zero-to-one depth path.
+
+The correction adds two scalar min/max operations in final colour normalization.
+No render pass, target, texture sample, shadow record, or varying is added. The fast vertex shader and
+its lighting/depth/body-shadow kernel retain the previous source; only the final
+composition changes. Static A/B checks keep the existing two-level RGBA8 image
+tolerance, including glare, outlines, transparency, and all eight body shadows.
+The weak-GPU compact interface and explicit selection behaviour are retained.
+
+These checks establish the compositing defect and its correction. They do not
+replace confirmation in the user's exact multiplayer session. Natural ambient
+light, intentional electrical faults and moving geometry retain their normal
+behaviour. Update the matching server JAR and resource pack together; rebuild
+Nexo/TRP or replace an externally hosted ZIP when those own delivery.
+
+
+1.8.5 STATIONARY FIRST-PERSON AIR STABILITY
+
+A sparse collision scan can alternate between a foreground edge and a farther
+surface. Breathing changes the server aim slightly even when the player stands
+still. Surface illumination was already independent of this global limit, but
+the local air volume could still brighten and dim as that limit changed.
+
+The camera-tracked controller now writes the configured optical range into its
+air-extent metadata. The existing spotlight shader already bounds every camera
+ray at scene depth, so nearby visible surfaces still end that ray. There is no
+new full-screen texture read, pass, or fragment branch. Both fast and compact
+spotlight source pairs remain identical to 1.8.4. Models, colour, beam width,
+intensity, shadows, and glare settings are retained.
+
+The correction applies to the active local camera-tracking branch, in either
+hand. Remote controls and local copies viewed from a distant F5 camera retain
+the server collision extent. Disabling local-camera-tracking also keeps the
+world-space path. This does not expand screen depth to describe off-screen
+geometry or remove the existing approximations of screen-space air/shadows.
+
+GPU regression checks reproduce the old air-volume pulse with unchanged scene
+and camera, then require matching frames across alternating scan extents. The
+checks cover both hands, fast/compact selection, all 13 native client profiles
+and 26.3 zero-to-one depth. F5 and remote tests retain their collision bounds.
+The user's exact live session still needs confirmation after installing the fix.
+
+Install the JAR for the running Paper server version. A 26.3 client does not
+make a Paper 1.21.4 server compatible with the 26.3 JAR; that server requires
+the 1.21.X build. Paper rejects a newer api-version before plugin startup.
+Update the resource pack as well as the JAR, including externally hosted or
+provider-built packs. Reusing an older pack keeps the previous controller code.
+
+
+1.8.4 FAST AND COMPATIBLE CLIENT PROFILES
+
+In 1.8.4-1.8.5, the default fast spotlight shader retained the 1.8.2 source after
+expanding imports. Version 1.8.6 retains its lighting/shadow kernel and corrects
+only the final alpha composition. It does not perform the compact variant's extra per-fragment shadow
+record decoding. The five-pass graph, item models, optical settings and full
+light/shadow capacities remain shared. Both shader pairs compile against all
+13 supported native clients. GPU A/B timings are effect-only measurements;
+small timing differences between identical shaders reflect measurement noise.
+
+Vanilla Minecraft does not send the GPU vendor, model or varying limit to the
+server. The 26.3 SPIR-V compiler does not provide a reliable per-device varying
+limit for shader preprocessing. Renderer selection therefore does not pretend
+to identify Intel, AMD or NVIDIA hardware.
+
+resource-pack.renderer — default AUTO; values AUTO, FAST, COMPATIBLE
+  AUTO sends the original fast renderer. If Minecraft reports FAILED_RELOAD
+  for FlashLight's own primary pack, standalone delivery schedules one compact
+  retry for that player. Other players retain the fast pack. A compact failure
+  cannot trigger another retry. Declines, download failures and unrelated packs
+  do not trigger fallback. FAST disables this automatic retry. COMPATIBLE selects
+  the compact renderer globally, including the input sent to Nexo/TRP.
+
+Some clients report post-processing link errors only after accepting the pack;
+these failures may not send FAILED_RELOAD. Use /flashlight pack compatible on
+that client, or select COMPATIBLE in the server configuration. A required pack
+can disconnect the client before a retry completes. Automatic recovery is not
+a substitute for configuring a known incompatible client or provider.
+
+/flashlight pack compatible and /flashlight pack fast affect only the invoking
+player's current connection. Disconnecting or reloading the service resets
+that choice. The compatible download uses its own pack UUID, SHA-1 and HTTP
+route. Switching removes only FlashLight's previous variant. There is no
+per-frame capability probe and no additional pass in the fast renderer.
+
+The plugin exports FlashLight-ResourcePack.zip and
+FlashLight-ResourcePack-Compatible.zip with native version resolution and
+current glare tuning. Built-in hosting serves both. When an external URL owns
+standalone delivery, also host the exported compatible ZIP and configure
+resource-pack.compatibility-url with its direct HTTP(S) URL. Without a reachable
+compatible URL, no automatic fallback is attempted. Branch distributions in
+the complete release include separately named Compatible ZIPs for manual use.
+
+Nexo and TRP keep their pack delivery and composition. Per-player commands do
+not replace their shared pack. Select resource-pack.renderer: COMPATIBLE and
+reload/rebuild the provider when it needs the compact shader globally. AUTO
+keeps the fast renderer for providers; mixed profiles through an external
+provider require support from that provider and are not implemented here.
+
+The Modrinth checker's asynchronous work and 24-hour console/admin cooldowns
+are unchanged. Renderer selection neither installs an update nor changes the
+existing notification limits.
+
+
+1.8.3 GPU COMPATIBILITY AND UPDATE CHECKS
+
+The compact spotlight vertex/fragment interface introduced in 1.8.3 uses 16 varying vectors (61 scalar
+components), down from 31 vectors / 112 components. This addresses the
+"Not enough space for defined varyings" failure reported by an Intel HD 2500
+OpenGL driver. The budget is checked for every supported native client profile.
+The actual Intel device has not been tested here; other driver limits remain
+possible, so its owner must verify the new pack on that machine.
+
+The renderer still supports 32 lights and all eight body shadows. The first
+three active shadow records are cached between stages; further records are
+loaded from the same metadata and cached per fragment. Sparse inverse
+projection coefficients keep full float precision. Unusual projection matrices
+use the original full projection. A/B image checks against 1.8.2 cover all light
+slots, sparse shadow slots, the uncached eighth body, glare, off-axis, skew and
+orthographic projections. Surface, air, shadow and glare settings are unchanged.
+Lower interface usage is a compatibility optimization, not a promise of higher
+FPS. The included GPU A/B reports show the measured effect-only tradeoffs.
+
+updates.enabled — default true
+updates.check-interval-hours — default 24; clamped to 1–168
+updates.notify-admins — default true
+
+The checker queries the official Modrinth project J6Ka5Ie8, The FlashLight
+Plugin by MrDino, using the Paper loader and exact native Minecraft version.
+Only newer listed stable releases are announced. Semantic version comparison
+avoids confusing 1.10.0 with 1.9.0 or announcing an older published build.
+Requests omit changelogs, identify FlashLight in User-Agent, and have connection,
+read and response-size bounds. Checks run asynchronously after ten seconds and
+then at the configured interval. Unavailable APIs do not prevent startup.
+
+Console receives at most one available-update notice per 24 hours. Each
+administrator UUID has its own 24-hour notice cooldown, so reconnecting does
+not spam the chat. Reloading FlashLight preserves both cooldowns. A restart
+starts a new notice session. If a compatible update remains available after
+24 hours, notices can repeat. Regular players are not notified. The plugin
+never downloads or installs a new JAR automatically.

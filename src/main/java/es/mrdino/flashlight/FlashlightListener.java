@@ -17,7 +17,6 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -121,15 +120,6 @@ public final class FlashlightListener implements Listener {
     public void quit(PlayerQuitEvent event) {
         plugin.service().forget(event.getPlayer());
         plugin.packs().forget(event.getPlayer());
-    }
-
-    @EventHandler
-    public void join(PlayerJoinEvent event) {
-        if (plugin.settings().packOnJoin()) {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (event.getPlayer().isOnline()) plugin.packs().request(event.getPlayer(), true);
-            }, 30);
-        }
     }
 
     @EventHandler

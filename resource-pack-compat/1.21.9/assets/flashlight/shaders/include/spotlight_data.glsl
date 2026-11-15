@@ -7,18 +7,26 @@ const int FL_MAX_SHADOWS = 8;
 const int FL_SHADOW_Y = FL_CONTROL_HEIGHT * FL_MAX_LIGHTS;
 vec4 flEncodeFloat(float value) {
     if (value == 0.0) return vec4(0.0);
+#if __VERSION__ >= 330
+    uint bits = floatBitsToUint(value);
+#else
     float magnitude = abs(value);
     int exponent = int(floor(log2(magnitude)));
     uint mantissa = uint(clamp(round((magnitude / exp2(float(exponent)) - 1.0) * 8388608.0), 0.0, 8388607.0));
     uint bits = (value < 0.0 ? 2147483648u : 0u) | (uint(exponent + 127) << 23u) | mantissa;
+#endif
     return vec4(float(bits & 255u), float((bits >> 8u) & 255u), float((bits >> 16u) & 255u), float(bits >> 24u)) / 255.0;
 }
 float flDecodeFloat(vec4 pixel) {
     uvec4 bytes = uvec4(round(pixel * 255.0));
     uint bits = bytes.x | (bytes.y << 8u) | (bytes.z << 16u) | (bytes.w << 24u);
     if (bits == 0u) return 0.0;
+#if __VERSION__ >= 330
+    return uintBitsToFloat(bits);
+#else
     int exponent = int((bits >> 23u) & 255u) - 127;
     return (bits >= 2147483648u ? -1.0 : 1.0) * (1.0 + float(bits & 8388607u) / 8388608.0) * exp2(float(exponent));
+#endif
 }
 bool flControlTexel(vec4 texel) {
     vec4 bytes=round(texel*255.0);

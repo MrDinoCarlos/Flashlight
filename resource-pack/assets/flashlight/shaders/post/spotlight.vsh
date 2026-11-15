@@ -34,6 +34,11 @@ void main() {
             flDecodeFloat(flShadowCell(DataSampler,slot,3)),flDecodeFloat(flShadowCell(DataSampler,slot,25)));
         flShadowAxes[slot]=vec4(flDecodeFloat(flShadowCell(DataSampler,slot,4)),flDecodeFloat(flShadowCell(DataSampler,slot,5)),
             flDecodeFloat(flShadowCell(DataSampler,slot,6)),flDecodeFloat(flShadowCell(DataSampler,slot,24)));
+        // These body-space coefficients are constant over the entire frame.
+        // Compute them per vertex rather than per receiver pixel and light.
+        float inverseRadius=1.0/max(.025,flShadowCenters[slot].w);
+        flShadowCenters[slot].w=inverseRadius;
+        flShadowAxes[slot]=vec4(normalize(flShadowAxes[slot].xyz),1.0/max(.05,flShadowAxes[slot].w)-inverseRadius);
     }
     for(int slot=0;slot<FL_MAX_LIGHTS;slot++) {
         if(!flHeader(flCell(DataSampler,slot,0))) continue;

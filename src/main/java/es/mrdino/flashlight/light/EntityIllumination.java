@@ -55,7 +55,11 @@ final class EntityIllumination {
     void update(org.bukkit.entity.Player player,Vec3 origin,Vec3 direction,double angle,double range,double power,double visibleRange,double beamVisibility,
                 FlashlightSettings settings,boolean left) {
         if(!enabled) return;
-        if(power<=0 || visibleRange<.08) { remove(player.getUniqueId()); return; }
+        // Discovery rays bound the remote air volume, not the powered light.
+        // A breathing lens can graze a block and return a scan of only millimetres.
+        // Removing its controller here also extinguishes the independent local
+        // camera ray and every surface. The client clips those by scene depth.
+        if(power<=0) { remove(player.getUniqueId()); return; }
         World world=player.getWorld(); Control control=controls.get(player.getUniqueId());
         if(control!=null && (!control.entity.isValid() || !control.entity.getWorld().equals(world))) { remove(player.getUniqueId()); control=null; }
         if(control==null) {

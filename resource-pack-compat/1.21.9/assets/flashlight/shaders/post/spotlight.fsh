@@ -24,11 +24,11 @@ float flBodyVisibility(vec3 origin,vec3 point) {
         uint bit=1u<<uint(slot);
         if((remaining & bit)==0u) continue;
         remaining&=~bit;
-        vec3 center=flShadowCenters[slot].xyz,up=normalize(flShadowAxes[slot].xyz);
-        float radius=max(.025,flShadowCenters[slot].w),height=max(.05,flShadowAxes[slot].w);
+        vec3 center=flShadowCenters[slot].xyz,up=flShadowAxes[slot].xyz;
+        float inverseRadius=flShadowCenters[slot].w,axialScale=flShadowAxes[slot].w;
         vec3 a=origin-center,b=point-origin;
-        a=a/radius+up*dot(a,up)*(1.0/height-1.0/radius);
-        b=b/radius+up*dot(b,up)*(1.0/height-1.0/radius);
+        a=a*inverseRadius+up*dot(a,up)*axialScale;
+        b=b*inverseRadius+up*dot(b,up)*axialScale;
         float lengthSquared=dot(b,b);
         if(lengthSquared<.000001) continue;
         float nearest=-dot(a,b)/lengthSquared;
@@ -102,6 +102,9 @@ vec3 flViewPoint(vec2 uv,float depth,mat4 inverseProjection) {
     return p.xyz/p.w;
 }
 bool flShadow(vec3 origin,vec3 point,mat4 projection,mat4 inverseProjection) {
+    float receiverDistance=length(point-origin)-.12;
+    if(receiverDistance<=0.0) return false;
+    float receiverDistanceSquared=receiverDistance*receiverDistance;
     // Screen-space occlusion along the optical ray; outside-screen geometry
     // is left to the existing server collision/volume limits.
     for(int sampleIndex=1;sampleIndex<=10;sampleIndex++) {
@@ -115,7 +118,8 @@ bool flShadow(vec3 origin,vec3 point,mat4 projection,mat4 inverseProjection) {
         float sceneDepth=texture(DepthSampler,uv).r;
         // Compare in view space to keep the tolerance independent of distance.
         vec3 surface=flViewPoint(uv,sceneDepth,inverseProjection);
-        if(sceneDepth<.999999 && surface.z>probe.z+.10 && length(surface-origin)<length(point-origin)-.12) return true;
+        vec3 fromOrigin=surface-origin;
+        if(sceneDepth<.999999 && surface.z>probe.z+.10 && dot(fromOrigin,fromOrigin)<receiverDistanceSquared) return true;
     }
     return false;
 }
@@ -131,11 +135,10 @@ vec3 flNormal(vec3 point,mat4 inverseProjection) {
     return dot(n,n)>.000000000001 ? normalize(n) : normalize(-point);
 }
 void main() {
-    vec4 scene=texture(InSampler,texCoord);
-    float depth=texture(DepthSampler,texCoord).r;
     vec4 outline=texture(OutlineSampler,texCoord);
     fragColor=outline;
     if(flActiveLights==0u) return;
+    float depth=texture(DepthSampler,texCoord).r;
     float strength=0.0,haze=0.0,glare=0.0;
     vec3 point=flViewPoint(texCoord,depth,flInverseProjection);
     float viewDistance=length(point);
@@ -174,7 +177,11 @@ void main() {
         if(depth>=.999999) continue;
         vec3 offset=point-origin;
         float axial=dot(offset,axis),distance=length(offset);
-        if(axial<=0.0 || distance>=range || distance>visibleRange+.08) continue;
+        // The sparse server scan bounds the air volume, not every receiver.
+        // A nearby edge can hide the far wall from all discovery rays while
+        // that wall remains visible beside it. Clip each surface by its own
+        // scene depth and occlusion instead of blinking the entire far cone.
+        if(axial<=0.0 || distance>=range) continue;
         float radial=length(offset-axis*axial)/(FLASHLIGHT_LENS_RADIUS+slope*axial);
         if(radial>=1.0) continue;
         float mask=1.0-smoothstep(.62,1.0,radial);
@@ -184,6 +191,8 @@ void main() {
         strength+=power*mask*flAttenuation(distance,range)*incidence*(.45+.55*exp(-2.5*radial*radial))*flBodyVisibility(origin,point);
     }
     if(strength<=0.0 && haze<=0.0 && glare<=0.0) return;
+    // Unlit pixels need only the outline; avoid reading the scene colour there.
+    vec4 scene=texture(InSampler,texCoord);
     // Exposure preserves the scene's RGB ratios and texture detail. It never
     // replaces a skin/model with a white colour or emits light at an entity.
     vec3 lit=scene.rgb;
@@ -202,14 +211,19 @@ void main() {
     vec3 difference=lit-scene.rgb;
     vec3 capacity=mix(scene.rgb,vec3(1.0)-scene.rgb,step(vec3(0.0),difference));
     vec3 ratio=abs(difference)/max(capacity,vec3(.000001));
-    float opacity=ceil(clamp(max(ratio.r,max(ratio.g,ratio.b)),0.0,1.0)*255.0)/255.0;
+    float requiredOpacity=clamp(max(ratio.r,max(ratio.g,ratio.b)),0.0,1.0);
+    float opacity=ceil(requiredOpacity*255.0)/255.0;
     if(opacity<=0.0) return;
-    vec3 lightColor=clamp(scene.rgb+difference/opacity,0.0,1.0);
+    float opacityLimit=.40+min(glare,.45);
+    // Keep the existing uncapped encoding. When alpha is capped, normalize
+    // colour with continuous opacity so RGBA8 rounding cannot pulse the texture.
+    float colorOpacity=min(opacity,max(requiredOpacity,opacityLimit));
+    vec3 lightColor=clamp(scene.rgb+difference/colorOpacity,0.0,1.0);
     // Keep ordinary glowing entities on top, including partially blurred edges.
     // Fabulous composes water/glass after the opaque scene sampled above.
     // An opaque light overlay would replace those later layers entirely.
     // Keep at least 60% of their colour/animation, even on bright receiving blocks.
-    float lightWeight=min(opacity,.40+min(glare,.45))*(1.0-outline.a);
+    float lightWeight=min(opacity,opacityLimit)*(1.0-outline.a);
     float alpha=outline.a+lightWeight;
     fragColor=vec4((outline.rgb*outline.a+lightColor*lightWeight)/max(alpha,.000001),alpha);
 }

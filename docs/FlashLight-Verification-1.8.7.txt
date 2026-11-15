@@ -1,0 +1,305 @@
+FLASHLIGHT 1.8.7 — RELEASE VERIFICATION
+
+Release: FlashLight 1.8.7
+Packaged: 2026-11-15 03:07:31 UTC
+Automated tests: 179 passed; 0 failures; 0 errors; 0 skipped.
+Pack validation: 1,181 base models; valid JSON/UVs/textures; embedded packs match distributed ZIPs.
+Rendering profiles checked: 13 native Minecraft client releases.
+Native Paper probes: 12 passed; each report matches the final distributed JAR SHA-256.
+
+Native Minecraft / Paper build / result / server Java:
+  1.21.4    build 232  PASS  Java 21
+  1.21.5    build 114  PASS  Java 21
+  1.21.6    build  48  PASS  Java 21
+  1.21.7    build  32  PASS  Java 21
+  1.21.8    build  60  PASS  Java 21
+  1.21.9    build  59  PASS  Java 21
+  1.21.10   build 130  PASS  Java 21
+  1.21.11   build 132  PASS  Java 21
+  26.1.1    build  29  PASS  Java 25
+  26.1.2    build  74  PASS  Java 25
+  26.2      build 134  PASS  Java 25
+  26.3      build 222  PASS  Java 25
+
+Plain Paper 26.1 was not available in the retrieved published server list.
+The 26.1 client renderer is checked; native server probes cover 26.1.1 and 26.1.2.
+
+NATIVE CONNECTED-CLIENT LENS REGRESSION
+
+Stationary camera, fixed daylight, breathing enabled, random faults disabled.
+A block edge crosses the server lens while the rendered camera stays still.
+The uncorrected 1.8.6 run lost its controllers in 25 of 69 live samples.
+The corrected 26.3 fast run kept all 69 samples active; the measured lit
+patch remained byte-for-byte stable in its 12 image samples.
+26.3 images use temporary diagnostic colour/depth recording passes and a
+texture-readback agent. These diagnostics are absent from shipped packs.
+Legacy client images use the shipped graph and a readback agent.
+
+Minecraft 26.3 vanilla; FAST; live samples=69; missing controls=0; image samples=12; measured patch channel range=0; PASS
+Minecraft 26.3 vanilla; COMPATIBLE; live samples=69; missing controls=0; image samples=12; measured patch channel range=0; PASS
+Minecraft 1.21.4 + OptiFine HD U J3 (Shaders OFF); FAST; live samples=56; missing controls=0; image samples=8; measured patch channel range=0; PASS
+Minecraft 1.21.4 vanilla; FAST; live samples=57; missing controls=0; image samples=8; measured patch channel range=0; PASS
+
+This corrects server-side controller removal, not every possible visual variation.
+OptiFine validation is 1.21.4 HD U J3, external Shaders OFF. No official
+26.3 OptiFine build was listed at https://optifine.net/downloads when checked
+on 2026-11-15. External shaderpacks, other settings and GPUs are not certified.
+All shader files are identical to 1.8.6; no GPU pass, target or sample is added.
+
+CHECK SCOPE
+
+Behavioral tests cover commands/selectors/timers, permissions, battery and item
+persistence, transfers, configuration migration, provider contracts, geometric
+hand placement, forward lens direction, upper switch orientation across all
+six item models in both hands, multiplayer visibility, and resource-pack tuning.
+Standalone checks exercise automatic join/reload delivery, old-default migration,
+IPv4/IPv6/domain URLs, provider ownership, HTTP byte/hash integrity and cleanup.
+Renderer checks cover per-player selection, one retry on FAILED_RELOAD, rejection
+of unrelated statuses, explicit FAST/COMPATIBLE modes and external fallback URLs.
+Modrinth checks verify stable-release selection for the native Paper version,
+semantic ordering, HTTP failures, asynchronous lifecycle and notification limits.
+Console and per-admin notices are checked at 0, 23, 24 and 48 hours, including
+reconnects and reload, without making live API requests in the unit tests.
+
+Graphics checks use actual OpenGL shader compilation and rendering, exact-version
+native includes/post schemas, and the shipped five-pass graph. They cover dim/off,
+cone boundaries, textures, scene-depth preservation, normal outlines, water,
+shared body shadows, both local hands, distant-camera behavior, and face glare.
+26.3 also has ShaderC SPIR-V compilation across relevant native transparency
+phases and depth definitions, plus zero-to-one OpenGL depth reconstruction checks.
+Foreground/distant receiver regressions ensure that sparse scan reach changes
+do not blink surface lighting; this is checked across all 13 client profiles.
+Stationary first-person air regressions alternate near/far collision scan extents
+with fixed scene/camera, checking both hands across all 13 native profiles and
+both renderer variants, including 26.3 zero-to-one depth. The 1.8.4 implementation
+failed this regression before the local metadata correction. Remote and distant
+F5 controls retain their server collision limits. The full-screen spotlight
+programs, pass graph, models and textures are unchanged by the 1.8.5 correction.
+The optional compact interface fits 16 varying vectors and uses 61 scalar
+components. The default fast lighting/shadow kernel and vertex shader retain
+the expanded 1.8.2 source; final capped-colour normalization uses continuous opacity.
+The fast kernel does not execute the compact path's extra fragment work. Both paths compile
+against all 13 native client profiles. Compact A/B checks against 1.8.2 cover
+32 lights, sparse slots, all eight body casters, glare and nonstandard projection
+matrices. Full float precision and the five-pass graph are retained.
+Surface-composition regressions sweep 128 intensity samples with fixed scene and
+camera. The old encoder alternated between adjacent RGB values after clipping
+overlay alpha; the corrected fast and compatible outputs keep capped RGB stable.
+The same property is checked across all 13 native profiles and 26.3 zero-to-one
+depth. Scan regressions compare exact final composited RGB rather than invisible
+overlay RGB. The capped-colour regression checks the encoded RGB/alpha directly. Static A/B appearance remains
+within the existing two-level RGBA8 tolerance. No sample, pass or target is added.
+
+The native probe launches actual isolated Paper servers. It checks startup,
+native items, command registration, reload, collision geometry, bounded display
+counts, shared/private optical controls, eight shared body controls, intensity,
+turning, cleanup, unchanged receiver metadata/block light, and native pack export.
+It also requests and downloads the primary pack over the standalone HTTP listener
+without Nexo or an explicit public URL, checking the offered SHA-1 and ZIP bytes.
+Observers are simulated; these are not twelve interactive multiplayer sessions.
+
+LIMITS OF THIS VERIFICATION
+
+Isolated connected-client checks are listed above. No production-server CPU
+profile, long manual multiplayer play session, complete interactive Vulkan
+session or exhaustive rendering-mod/GPU matrix was performed. Third-person grip is checked geometrically; final animation/camera
+appearance should be observed in the native game. External provider contracts
+and legacy shader fixtures do not certify every Nexo/TRP/Strobe release on every
+server version. Future patches and protocol-translated clients are not implied.
+An Intel HD 2500 was not available for physical testing. The reduced interface
+targets its reported varying-space link failure, but other hardware/driver
+limitations remain possible and must be checked on that device.
+Vanilla sends no GPU identity. Some late postprocessing failures never report
+FAILED_RELOAD; these require manual compatible selection. Shared Nexo/TRP
+delivery retains the configured global profile and cannot retry per player.
+Additional 26.3 startup probes encountered intermittent native Windows aborts
+before atlas creation, also reproduced with vanilla and the previous release.
+Those earlier startup-only probes did not establish an interactive session.
+The later successful connected-client cases are documented separately above.
+
+Body shadows approximate up to eight selected player ellipsoids; they are not
+animated mesh shadows. Local camera tracking reduces steering delay but cannot
+restore server TPS or eliminate latency. These limits are documented in the wiki.
+
+GPU MEASUREMENT
+
+The following is synthetic effect cost, not whole-client FPS. The scene has no
+active body proxies and is not a worst-case shadow benchmark. Timing varies with
+load, resolution, drivers, hardware, and visible lights. Internal target bytes
+are estimated allocation, not total Minecraft VRAM.
+
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; complete shipped outline chain + native RGB blit
+passes=5; internal target allocation bytes=16623360
+lights=1; median GPU ms=3.324928; p90 GPU ms=3.741696
+lights=4; median GPU ms=5.16096; p90 GPU ms=5.92384
+
+GPU A/B AGAINST THE 1.8.1 SHADERS
+
+31 interleaved timed frames after warmup, identical scene and graph.
+Appearance is compared within two RGBA8 levels. These timings describe
+effect cost, not total Minecraft FPS; background GPU load can affect them.
+The zero-light case forces the outline graph for measurement; Minecraft
+normally skips this graph when no outlined entities need it.
+
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; GLSL 150; baseline 1.8.1; interleaved complete graph A/B
+lights=0; shadows=0; before median GPU ms=0.299008; after median GPU ms=0.326656; change percent=9.246575342465754
+lights=1; shadows=0; before median GPU ms=0.5888; after median GPU ms=0.589824; change percent=0.17391304347826086
+lights=4; shadows=0; before median GPU ms=1.569792; after median GPU ms=1.534976; change percent=-2.217873450750163
+lights=1; shadows=8; before median GPU ms=0.566272; after median GPU ms=0.56832; change percent=0.3616636528028933
+lights=4; shadows=8; before median GPU ms=1.568768; after median GPU ms=1.528832; change percent=-2.545691906005222
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; GLSL 330; baseline 1.8.1; interleaved complete graph A/B
+lights=0; shadows=0; before median GPU ms=0.280576; after median GPU ms=0.258048; change percent=-8.02919708029197
+lights=1; shadows=0; before median GPU ms=0.549888; after median GPU ms=0.54784; change percent=-0.37243947858473
+lights=4; shadows=0; before median GPU ms=1.524736; after median GPU ms=1.414144; change percent=-7.25319006044325
+lights=1; shadows=8; before median GPU ms=0.566272; after median GPU ms=0.561152; change percent=-0.9041591320072333
+lights=4; shadows=8; before median GPU ms=1.567744; after median GPU ms=1.451008; change percent=-7.4461136512083606
+
+DEFAULT FAST PATH A/B AGAINST 1.8.2
+
+The cached lighting/shadow kernel is retained; capped colours use continuous opacity.
+No new texture sample, pass or target is added. Timings include measurement noise.
+The compatible profile's extra fragment work is absent from this path.
+
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; GLSL 150; baseline 1.8.2; interleaved complete graph A/B
+lights=0; shadows=0; before median GPU ms=0.310272; after median GPU ms=0.315392; change percent=1.6501650165016502
+lights=1; shadows=0; before median GPU ms=0.555008; after median GPU ms=0.561152; change percent=1.1070110701107012
+lights=4; shadows=0; before median GPU ms=1.498112; after median GPU ms=1.498112; change percent=0.0
+lights=1; shadows=8; before median GPU ms=0.56832; after median GPU ms=0.569344; change percent=0.18018018018018017
+lights=4; shadows=8; before median GPU ms=1.528832; after median GPU ms=1.529856; change percent=0.06697923643670463
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; GLSL 330; baseline 1.8.2; interleaved complete graph A/B
+lights=0; shadows=0; before median GPU ms=0.257024; after median GPU ms=0.258048; change percent=0.398406374501992
+lights=1; shadows=0; before median GPU ms=0.54784; after median GPU ms=0.54784; change percent=0.0
+lights=4; shadows=0; before median GPU ms=1.415168; after median GPU ms=1.415168; change percent=0.0
+lights=1; shadows=8; before median GPU ms=0.561152; after median GPU ms=0.562176; change percent=0.18248175182481752
+lights=4; shadows=8; before median GPU ms=1.451008; after median GPU ms=1.451008; change percent=0.0
+
+COMPACT INTERFACE A/B AGAINST 1.8.2
+
+This change reduces varying storage to support lower interface budgets.
+It does not promise higher FPS: extra shadow records are decoded lazily
+per fragment. Read the measured GPU cost for each scenario, not only its
+interface-size reduction. A/B image differences remain within two RGBA8 levels.
+
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; GLSL 150; baseline 1.8.2; interleaved complete graph A/B
+lights=0; shadows=0; before median GPU ms=0.306176; after median GPU ms=0.300032; change percent=-2.0066889632107023
+lights=1; shadows=0; before median GPU ms=0.551936; after median GPU ms=0.590848; change percent=7.050092764378479
+lights=4; shadows=0; before median GPU ms=1.490944; after median GPU ms=1.565696; change percent=5.013736263736264
+lights=1; shadows=8; before median GPU ms=0.562176; after median GPU ms=0.630784; change percent=12.2040072859745
+lights=4; shadows=8; before median GPU ms=1.512448; after median GPU ms=1.695744; change percent=12.119160460392688
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; GLSL 330; baseline 1.8.2; interleaved complete graph A/B
+lights=0; shadows=0; before median GPU ms=0.254976; after median GPU ms=0.294912; change percent=15.662650602409638
+lights=1; shadows=0; before median GPU ms=0.541696; after median GPU ms=0.582656; change percent=7.561436672967864
+lights=4; shadows=0; before median GPU ms=1.399808; after median GPU ms=1.463296; change percent=4.535479151426482
+lights=1; shadows=8; before median GPU ms=0.556032; after median GPU ms=0.623616; change percent=12.154696132596685
+lights=4; shadows=8; before median GPU ms=1.435648; after median GPU ms=1.60256; change percent=11.626248216833096
+
+CAPPED SURFACE TEMPORAL REGRESSION
+
+Fixed geometry/camera/scene; intensity swept through the capped range.
+The old 1.8.5 trace alternated adjacent RGB codes. Both final variants
+remain constant; full per-frame traces are included alongside this report.
+spotlight: 128 samples; constant composited RGB 121,86,47
+spotlight_compat: 128 samples; constant composited RGB 121,86,47
+
+NATIVE CPU MEASUREMENTS
+
+Synthetic repeated renderer updates; not a production-server profile.
+
+Paper 1.21.4:
+5000 stationary wall updates ms=228.5241
+2000 moving wall updates ms=147.6183
+5000 stationary precise updates ms=44.7439; average ms/update=0.00894878
+2000 moving precise updates ms=31.3936; average ms/update=0.0156968
+
+Paper 1.21.5:
+5000 stationary wall updates ms=290.0015
+2000 moving wall updates ms=185.2988
+5000 stationary precise updates ms=35.0145; average ms/update=0.007002899999999999
+2000 moving precise updates ms=27.074101; average ms/update=0.0135370505
+
+Paper 1.21.6:
+5000 stationary wall updates ms=219.4654
+2000 moving wall updates ms=146.287
+5000 stationary precise updates ms=34.717; average ms/update=0.0069434
+2000 moving precise updates ms=31.720899; average ms/update=0.0158604495
+
+Paper 1.21.7:
+5000 stationary wall updates ms=331.1606
+2000 moving wall updates ms=226.0564
+5000 stationary precise updates ms=32.4155; average ms/update=0.0064831
+2000 moving precise updates ms=22.812799; average ms/update=0.011406399499999999
+
+Paper 1.21.8:
+5000 stationary wall updates ms=304.9516
+2000 moving wall updates ms=158.9833
+5000 stationary precise updates ms=31.9655; average ms/update=0.0063931
+2000 moving precise updates ms=17.151899; average ms/update=0.0085759495
+
+Paper 1.21.9:
+5000 stationary wall updates ms=270.7565
+2000 moving wall updates ms=149.4578
+5000 stationary precise updates ms=26.228599; average ms/update=0.0052457198
+2000 moving precise updates ms=22.457701; average ms/update=0.0112288505
+
+Paper 1.21.10:
+5000 stationary wall updates ms=308.6291
+2000 moving wall updates ms=216.2967
+5000 stationary precise updates ms=51.959199; average ms/update=0.0103918398
+2000 moving precise updates ms=32.2666; average ms/update=0.0161333
+
+Paper 1.21.11:
+5000 stationary wall updates ms=233.9519
+2000 moving wall updates ms=167.144099
+5000 stationary precise updates ms=81.816699; average ms/update=0.0163633398
+2000 moving precise updates ms=53.033; average ms/update=0.026516500000000002
+
+Paper 26.1.1:
+5000 stationary wall updates ms=243.4618
+2000 moving wall updates ms=163.3006
+5000 stationary precise updates ms=29.5351; average ms/update=0.00590702
+2000 moving precise updates ms=17.2316; average ms/update=0.0086158
+
+Paper 26.1.2:
+5000 stationary wall updates ms=212.8545
+2000 moving wall updates ms=178.7975
+5000 stationary precise updates ms=31.9913; average ms/update=0.006398259999999999
+2000 moving precise updates ms=14.9093; average ms/update=0.00745465
+
+Paper 26.2:
+5000 stationary wall updates ms=302.1607
+2000 moving wall updates ms=197.5701
+5000 stationary precise updates ms=34.4773; average ms/update=0.00689546
+2000 moving precise updates ms=22.3116; average ms/update=0.011155799999999999
+
+Paper 26.3:
+5000 stationary wall updates ms=270.274
+2000 moving wall updates ms=189.1488
+5000 stationary precise updates ms=49.0786; average ms/update=0.00981572
+2000 moving precise updates ms=33.6514; average ms/update=0.016825700000000002
+
+DISTRIBUTED ARTIFACTS — SHA-256
+
+60154fed26011f71b88ca577e7bae666709e707beddabaafc9c7ddd9a424eb83  plugins/FlashLight-1.8.7-1.21.X.jar
+  478836 bytes
+e32c397c04f0f2eeaf11f1e0482cdd77a500321ea8497953a6935c2b9f7e957f  resource-packs/FlashLight-ResourcePack-1.8.7-1.21.X.zip
+  1311266 bytes
+80e8fae891793cc927048ac6f81b80c39fc6bc12ae7674c0ba1450b488003d4f  resource-packs/FlashLight-ResourcePack-1.8.7-1.21.X-Compatible.zip
+  1307013 bytes
+6480dbaf04c2f5b954a292b2dfff76fb17ed7a21dadb5409aea0bb91e5c6664b  plugins/FlashLight-1.8.7-26.1.X.jar
+  429102 bytes
+1a96a8f6c079532e6433d8094a9760a6872188543083238fd1023b0f2a4e8359  resource-packs/FlashLight-ResourcePack-1.8.7-26.1.X.zip
+  1210071 bytes
+fb5420ea49086ce64797ec6148c0fb16c2dfeba156df78723b65a380bf50a9ca  resource-packs/FlashLight-ResourcePack-1.8.7-26.1.X-Compatible.zip
+  1208191 bytes
+31a19d95d24ec0e3621a06ab9f49c0876db968a1ffe6047e03fabf159afef2f6  plugins/FlashLight-1.8.7-26.2.X.jar
+  429183 bytes
+cb55a4c6a3eca6f8c751f231a22195b0344ac43f82d4d7168b855ff8dd91aa49  resource-packs/FlashLight-ResourcePack-1.8.7-26.2.X.zip
+  1210170 bytes
+ee54d9a067ab53d1b15c1cc289de6cec14be753b636d89b8e2234d916933259e  resource-packs/FlashLight-ResourcePack-1.8.7-26.2.X-Compatible.zip
+  1208290 bytes
+55b152b8cb9d6f281ccb42f0e5aa0fe5fde03bbc904b2ba070d1bb87c6fa3216  plugins/FlashLight-1.8.7-26.3.X.jar
+  431339 bytes
+9d3af97229d3ec65a5e369dcd3821b41ef4672ceec0e0afc256de5c2f9f13ba4  resource-packs/FlashLight-ResourcePack-1.8.7-26.3.X.zip
+  1212248 bytes
+6d5f3e7fed2d18b1c4f549f495d2c64594d4a8986cccef278e6765dac12315e6  resource-packs/FlashLight-ResourcePack-1.8.7-26.3.X-Compatible.zip
+  1210340 bytes

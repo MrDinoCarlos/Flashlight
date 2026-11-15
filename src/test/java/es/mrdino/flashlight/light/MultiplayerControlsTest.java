@@ -42,6 +42,26 @@ class MultiplayerControlsTest {
             lights.remove(owner.getUniqueId()); verify(shared).remove(); verify(local).remove();
         }
     }
+    @Test void collisionScansNearTheLensDoNotDestroyOrRecreatePoweredControls() {
+        for(boolean localCamera:new boolean[]{true,false}) {
+            try(var fixture=new Fixture()) {
+                fixture.config.set("light.local-camera-tracking",localCamera);
+                var lights=new EntityIllumination(fixture.plugin);
+                var owner=fixture.player("Owner",0);
+                // A lens grazing a block can alternate between a zero-length
+                // server scan and open air while the rendered camera is still.
+                for(double extent:new double[]{0,.01,.079,20,.02,0,20}) {
+                    lights.update(owner,new Vec3(0,65,0),new Vec3(0,0,1),28,20,.8,extent,1,fixture.settings(),false);
+                    assertEquals(localCamera ? 2 : 1,fixture.displays.size(),"Reuse the same powered optical controls");
+                    assertEquals(1,lights.count(owner.getUniqueId()));
+                    for(var display:fixture.displays) verify(display,never()).remove();
+                }
+                lights.update(owner,new Vec3(0,65,0),new Vec3(0,0,1),28,20,0,0,1,fixture.settings(),false);
+                assertEquals(0,lights.count(owner.getUniqueId()),"A real blackout still removes the controls immediately");
+                for(var display:fixture.displays) verify(display).remove();
+            }
+        }
+    }
     @Test void sharedPlayerShadowsReachObserversAndDisappearWhenTheCasterHidesOrTheLightStops() {
         try(var fixture=new Fixture()) {
             var lights=new EntityIllumination(fixture.plugin);

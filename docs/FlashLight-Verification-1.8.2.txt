@@ -1,0 +1,192 @@
+FLASHLIGHT 1.8.2 — RELEASE VERIFICATION
+
+Release: FlashLight 1.8.2
+Packaged: 2026-11-14 11:09:44 UTC
+Automated tests: 132 passed; 0 failures; 0 errors; 0 skipped.
+Pack validation: 1,181 base models; valid JSON/UVs/textures; embedded packs match distributed ZIPs.
+Rendering profiles checked: 13 native Minecraft client releases.
+Native Paper probes: 12 passed; each report matches the final distributed JAR SHA-256.
+
+Native Minecraft / Paper build / result / server Java:
+  1.21.4    build 232  PASS  Java 21
+  1.21.5    build 114  PASS  Java 21
+  1.21.6    build  48  PASS  Java 21
+  1.21.7    build  32  PASS  Java 21
+  1.21.8    build  60  PASS  Java 21
+  1.21.9    build  59  PASS  Java 21
+  1.21.10   build 130  PASS  Java 21
+  1.21.11   build 132  PASS  Java 21
+  26.1.1    build  29  PASS  Java 25
+  26.1.2    build  74  PASS  Java 25
+  26.2      build 134  PASS  Java 25
+  26.3      build 222  PASS  Java 25
+
+Plain Paper 26.1 was not available in the retrieved published server list.
+The 26.1 client renderer is checked; native server probes cover 26.1.1 and 26.1.2.
+
+CHECK SCOPE
+
+Behavioral tests cover commands/selectors/timers, permissions, battery and item
+persistence, transfers, configuration migration, provider contracts, geometric
+hand placement, forward lens direction, upper switch orientation across all
+six item models in both hands, multiplayer visibility, and resource-pack tuning.
+Standalone checks exercise automatic join/reload delivery, old-default migration,
+IPv4/IPv6/domain URLs, provider ownership, HTTP byte/hash integrity and cleanup.
+
+Graphics checks use actual OpenGL shader compilation and rendering, exact-version
+native includes/post schemas, and the shipped five-pass graph. They cover dim/off,
+cone boundaries, textures, scene-depth preservation, normal outlines, water,
+shared body shadows, both local hands, distant-camera behavior, and face glare.
+26.3 also has ShaderC SPIR-V compilation across relevant native transparency
+phases and depth definitions, plus zero-to-one OpenGL depth reconstruction checks.
+Foreground/distant receiver regressions ensure that sparse scan reach changes
+do not blink surface lighting; this is checked across all 13 client profiles.
+
+The native probe launches actual isolated Paper servers. It checks startup,
+native items, command registration, reload, collision geometry, bounded display
+counts, shared/private optical controls, eight shared body controls, intensity,
+turning, cleanup, unchanged receiver metadata/block light, and one exported pack.
+It also requests and downloads that pack over the real standalone HTTP listener
+without Nexo or an explicit public URL, checking the offered SHA-1 and ZIP bytes.
+Observers are simulated; these are not twelve interactive multiplayer sessions.
+
+LIMITS OF THIS VERIFICATION
+
+No connected-client multiplayer play session, production-server CPU profile,
+complete interactive Vulkan session, or exhaustive rendering-mod/GPU matrix was
+performed. Third-person grip is checked geometrically; final animation/camera
+appearance should be observed in the native game. External provider contracts
+and legacy shader fixtures do not certify every Nexo/TRP/Strobe release on every
+server version. Future patches and protocol-translated clients are not implied.
+
+Body shadows approximate up to eight selected player ellipsoids; they are not
+animated mesh shadows. Local camera tracking reduces steering delay but cannot
+restore server TPS or eliminate latency. These limits are documented in the wiki.
+
+GPU MEASUREMENT
+
+The following is synthetic effect cost, not whole-client FPS. The scene has no
+active body proxies and is not a worst-case shadow benchmark. Timing varies with
+load, resolution, drivers, hardware, and visible lights. Internal target bytes
+are estimated allocation, not total Minecraft VRAM.
+
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; complete shipped outline chain + native RGB blit
+passes=5; internal target allocation bytes=16623360
+lights=1; median GPU ms=3.750912; p90 GPU ms=5.73952
+lights=4; median GPU ms=1.64864; p90 GPU ms=1.85344
+
+GPU A/B AGAINST THE 1.8.1 SHADERS
+
+31 interleaved timed frames after warmup, identical scene and graph.
+Appearance is compared within two RGBA8 levels. These timings describe
+effect cost, not total Minecraft FPS; background GPU load can affect them.
+The zero-light case forces the outline graph for measurement; Minecraft
+normally skips this graph when no outlined entities need it.
+
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; GLSL 150; interleaved complete graph A/B
+lights=0; shadows=0; before median GPU ms=0.297984; after median GPU ms=0.32768; change percent=9.965635738831615
+lights=1; shadows=0; before median GPU ms=0.545792; after median GPU ms=0.54784; change percent=0.37523452157598497
+lights=4; shadows=0; before median GPU ms=1.512448; after median GPU ms=1.478656; change percent=-2.2342586323628977
+lights=1; shadows=8; before median GPU ms=0.564224; after median GPU ms=0.566272; change percent=0.3629764065335753
+lights=4; shadows=8; before median GPU ms=1.562624; after median GPU ms=1.523712; change percent=-2.490170380078637
+NVIDIA GeForce RTX 3060/PCIe/SSE2; 1920x1080; GLSL 330; interleaved complete graph A/B
+lights=0; shadows=0; before median GPU ms=0.278528; after median GPU ms=0.257024; change percent=-7.720588235294118
+lights=1; shadows=0; before median GPU ms=0.54784; after median GPU ms=0.545792; change percent=-0.37383177570093457
+lights=4; shadows=0; before median GPU ms=1.518592; after median GPU ms=1.410048; change percent=-7.147673634524613
+lights=1; shadows=8; before median GPU ms=0.564224; after median GPU ms=0.559104; change percent=-0.9074410163339383
+lights=4; shadows=8; before median GPU ms=1.562624; after median GPU ms=1.445888; change percent=-7.470511140235911
+
+NATIVE CPU MEASUREMENTS
+
+Synthetic repeated renderer updates; not a production-server profile.
+
+Paper 1.21.4:
+5000 stationary wall updates ms=296.1614
+2000 moving wall updates ms=165.924
+5000 stationary precise updates ms=46.1511; average ms/update=0.009230219999999999
+2000 moving precise updates ms=36.8179; average ms/update=0.01840895
+
+Paper 1.21.5:
+5000 stationary wall updates ms=240.0208
+2000 moving wall updates ms=219.3496
+5000 stationary precise updates ms=33.2959; average ms/update=0.006659180000000001
+2000 moving precise updates ms=28.4707; average ms/update=0.01423535
+
+Paper 1.21.6:
+5000 stationary wall updates ms=384.1806
+2000 moving wall updates ms=268.8232
+5000 stationary precise updates ms=68.3666; average ms/update=0.013673320000000001
+2000 moving precise updates ms=37.8941; average ms/update=0.01894705
+
+Paper 1.21.7:
+5000 stationary wall updates ms=427.6777
+2000 moving wall updates ms=249.5812
+5000 stationary precise updates ms=50.7503; average ms/update=0.01015006
+2000 moving precise updates ms=28.676; average ms/update=0.014338
+
+Paper 1.21.8:
+5000 stationary wall updates ms=269.5533
+2000 moving wall updates ms=134.5369
+5000 stationary precise updates ms=28.2355; average ms/update=0.0056470999999999995
+2000 moving precise updates ms=15.9725; average ms/update=0.00798625
+
+Paper 1.21.9:
+5000 stationary wall updates ms=268.4188
+2000 moving wall updates ms=148.4237
+5000 stationary precise updates ms=25.138; average ms/update=0.0050276
+2000 moving precise updates ms=19.0333; average ms/update=0.00951665
+
+Paper 1.21.10:
+5000 stationary wall updates ms=259.6298
+2000 moving wall updates ms=191.9023
+5000 stationary precise updates ms=53.7154; average ms/update=0.01074308
+2000 moving precise updates ms=24.0421; average ms/update=0.01202105
+
+Paper 1.21.11:
+5000 stationary wall updates ms=228.2588
+2000 moving wall updates ms=203.8094
+5000 stationary precise updates ms=44.919; average ms/update=0.0089838
+2000 moving precise updates ms=31.3789; average ms/update=0.01568945
+
+Paper 26.1.1:
+5000 stationary wall updates ms=246.9449
+2000 moving wall updates ms=186.7318
+5000 stationary precise updates ms=35.9887; average ms/update=0.00719774
+2000 moving precise updates ms=24.6438; average ms/update=0.0123219
+
+Paper 26.1.2:
+5000 stationary wall updates ms=238.3882
+2000 moving wall updates ms=166.3723
+5000 stationary precise updates ms=39.2116; average ms/update=0.00784232
+2000 moving precise updates ms=20.0552; average ms/update=0.0100276
+
+Paper 26.2:
+5000 stationary wall updates ms=194.7466
+2000 moving wall updates ms=114.4432
+5000 stationary precise updates ms=28.4707; average ms/update=0.00569414
+2000 moving precise updates ms=14.3259; average ms/update=0.00716295
+
+Paper 26.3:
+5000 stationary wall updates ms=179.7735
+2000 moving wall updates ms=111.201
+5000 stationary precise updates ms=33.6911; average ms/update=0.00673822
+2000 moving precise updates ms=12.3488; average ms/update=0.0061744
+
+DISTRIBUTED ARTIFACTS — SHA-256
+
+5bcecf3c13ec836dd9e8a5459b1f4f84c62213ca5d39de6954b59cc739095771  plugins/FlashLight-1.8.2-1.21.X.jar
+  442815 bytes
+1b5b36c6f90c11d06c6524a613dade2c7e0ae4145a5550ba112849f7449a11be  resource-packs/FlashLight-ResourcePack-1.8.2-1.21.X.zip
+  1286490 bytes
+7920bef14c86ea933059dffbb6d8753199594361b088b1ff8007f03ef1a22685  plugins/FlashLight-1.8.2-26.1.X.jar
+  405258 bytes
+45e855bf0ece67bdf16ad5f8df0effb2545c09a8abc9e2722d61dcd5967ef821  resource-packs/FlashLight-ResourcePack-1.8.2-26.1.X.zip
+  1203912 bytes
+afc6cf9ba1e79e8a3e7fe074257f32b44a0b582fdcae29a2fc34433e7b4b00d4  plugins/FlashLight-1.8.2-26.2.X.jar
+  405357 bytes
+72cc7366f023ca791594d15de704bdbf7ec6b487afea01f74539e7e6c6aa1343  resource-packs/FlashLight-ResourcePack-1.8.2-26.2.X.zip
+  1204011 bytes
+60fa4724496f9123142c479838543dfbf69eb5f4c926113f1a5696f1b4918695  plugins/FlashLight-1.8.2-26.3.X.jar
+  407303 bytes
+542b90cbeed52becf2d0324fc09815c1a8e2baa6e778a4597d8f47cff63fa355  resource-packs/FlashLight-ResourcePack-1.8.2-26.3.X.zip
+  1205884 bytes
